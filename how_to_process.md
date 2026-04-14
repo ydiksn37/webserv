@@ -10,13 +10,13 @@ CGI実装に入る前に、まずは以下の3つの巨大モジュールを独�
 設定ファイルから読み取った情報を渡すためのクラス。
 
 ```cpp
-// config.hpp (雛形イメージ)
+// Config.hpp (雛形イメージ)
 class ServerConfig {
-	public:
-    int         GetPort() const;
-    std::string GetRootDirectory(const std::string& path) const;
-    int         GetMaxBodySize() const;
-    // ...etc
+private:
+	// ...etc
+
+public:
+  // ...etc
 };
 ```
 
@@ -24,13 +24,28 @@ class ServerConfig {
 Engine（ソケット通信）とHTTP（文字列解析）の境界線となる関数群。
 
 ```cpp
-// http_handler.hpp (雛形イメージ)
+// Engine.hpp (雛形イメージ)
+class Engine {
+private:
+	// ...etc
 
-// Engineはrecv()で受け取った「生の文字列」をこの関数に渡す
-HttpRequest ParseRequest(const std::string& raw_data);
+public:
+  // ...etc
+};
+```
 
-// HTTPは解析結果とConfigをもとに、「クライアントに送信する生の文字列」を生成してEngineに返す
-std::string GenerateResponse(const HttpRequest& req, const ServerConfig& conf);
+### C. Engine（通信・イベントループ）
+ソケットの生々しい操作を隠蔽し、イベントの通知に専念します。
+
+```cpp
+// EventLoop.hpp (雛形イメージ)
+class EventLoop {
+private:
+	// ...etc
+
+public:
+  // ...etc
+};
 ```
 
 ---
@@ -94,4 +109,4 @@ ConfigやHTTPパーサーは不要。「ポート8080で起動し、ブラウザ
 1. **42ヘッダー禁止:** ファイルが長くなるため。
 2. **スペース2:** tabsizeはスペース2とする。
 3. **.tpp, .ippファイル使用不可:** ファイル数が多くなり、ファイルをまたがる検索や修正に負荷がかかるため。
-4. **統合テスト:** 3つのブランチが形になったら `main` にマージし、「設定ファイルを読み込み、ポートを開き、ブラウザに正しいページを返す」フルフローをテストする。
+4. **コードフォーマッター:** clang-formatを使用、make formatで整形可能。
