@@ -1,0 +1,26 @@
+#.clang-format
+BasedOnStyle: Google
+
+#C++規格をC++98に指定
+Standard: Cpp03 
+
+#インデント設定
+IndentWidth: 2
+
+#public: を左端（0スペース）に置くための計算 (2 - 2 = 0)
+AccessModifierOffset: -2
+
+SortIncludes: Never
+
+#短い関数でも必ず改行を入れる
+AllowShortFunctionsOnASingleLine: None
+
+PointerAlignment: Left
+
+BreakBeforeBraces: Attach
+
+ColumnLimit: 100
+
+IndentCaseLabels: true
+
+UseTab: Never

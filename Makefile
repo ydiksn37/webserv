@@ -65,6 +65,11 @@ run: all
 	@$(MAKE) $(MAKE_FLAGS) clean -s
 	@./$(NAME) default.conf
 
+format:
+	@echo "$(YELLOW)🎨 Formatting code...$(RESET)"
+	@find $(SRCDIR) -type f \( -name "*.cpp" -o -name "*.hpp" \) | xargs clang-format -i
+	@echo "$(L_GREEN)✨ Formatting complete!$(RESET)\n"
+
 -include $(DEPS)
 
-.PHONY: all clean fclean re run
+.PHONY: all clean fclean re run format
