@@ -1,6 +1,6 @@
 #include <iostream>
 
 class test3 {
-public:
-  void print();
+  public:
+    void print();
 };

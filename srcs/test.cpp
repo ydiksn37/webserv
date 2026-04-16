@@ -4,6 +4,6 @@
 #include "test3/test.hpp"
 
 int main() {
-  std::cout << "test" << endl;
+  std::cout << "test" << std::endl;
   return 0;
 }
