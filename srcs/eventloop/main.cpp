@@ -80,15 +80,16 @@ void EventLoop()
 	epoll_ctl(epfd, EPOLL_CTL_ADD, sd_listen, &ev);
 	while(1)
 	{
-		int n_events = epoll_wait(epfd, events, N_FDS, -1);
-		if(n_events <= 0)
+		int n_events = epoll_wait(epfd, events, N_FDS, 30);
+		if(n_events < 0)
 			throw strerror(errno);
 
 		for(int i=0;i<n_events;i++)
 		{
 			if(events[i].data.fd < 0)
 				continue;
-			else if(events[i].data.fd == sd_listen)
+
+			if(events[i].data.fd == sd_listen)
 			{
 				int sd_client = accept(sd_listen, NULL, NULL);
 				ev.events = EPOLLIN;
