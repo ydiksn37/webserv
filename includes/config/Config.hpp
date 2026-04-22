@@ -9,11 +9,16 @@
 class Config {
 	private:
 		std::vector<ServerContext> _servers;
+
 	public:
 		Config();
 		~Config();
-		bool loadFile(const std::string& filename);
+		Config(const Config& other);
+		Config& operator=(const Config& other);
+
 		const std::vector<ServerContext>& getServers() const;
+		bool loadFile(const std::string& filename);
+		std::vector<std::string> tokenize(const std::string& content);
 };
 
 #endif
