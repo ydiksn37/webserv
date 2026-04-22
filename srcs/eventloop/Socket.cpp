@@ -1,3 +1,4 @@
+#include <cerrno>
 #include <csignal>
 #include <cstring>
 #include <netinet/in.h>

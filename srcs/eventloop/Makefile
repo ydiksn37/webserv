@@ -1,7 +1,7 @@
 NAME = server
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -pedantic
-SRCS = main.cpp Server.cpp
+SRCS = Client.cpp Epoll.cpp main.cpp Server.cpp Socket.cpp test.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 $(NAME):$(OBJS)
