@@ -14,7 +14,7 @@ class Epoll
 		void Mod(int fd,uint32_t events);
 		void Del(int fd);
 		void Accept(int fd);
-		const std::vector<epoll_event>& WaitEvents(); //TODO ブロックしてるのでタイムアウトを導入したほうがいいかも
+		const std::vector<epoll_event>& WaitEvents();
 		bool IsListen(int fd);
 	private:
 		int epfd_;

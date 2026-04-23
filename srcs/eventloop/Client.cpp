@@ -14,8 +14,8 @@ Client::Client(){}
 int Client::Read(int fd)
 {
 	client_[fd].is_read = 1;
-	char tmp_buffer[8096];
-	int read_size = read(fd, tmp_buffer, 8095);
+	char tmp_buffer[buffer_size];
+	int read_size = read(fd, tmp_buffer, buffer_size - 1);
 	if(read_size <= 0)
 	{
 		client_.erase(fd);
@@ -24,8 +24,9 @@ int Client::Read(int fd)
 	tmp_buffer[read_size] = '\0';
 	client_[fd].buffer.append(tmp_buffer);
 
-	if(endswith(client_[fd].buffer, "\r\n\r\n"))
+	if(endswith(client_[fd].buffer, "\r\n\r\n")) // TODO bodyがある場合にも対応
 	{
+		// GetContentLength(client_[fd].buffer);
 		client_[fd].is_read = 0;
 		client_[fd].buffer = Engine(client_[fd].buffer);
 	}

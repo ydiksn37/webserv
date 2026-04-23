@@ -1,8 +1,10 @@
-
 #include "Client.hpp"
 #include "Epoll.hpp"
 #include <iostream>
+#include <ostream>
+#include <sys/epoll.h>
 #include <unistd.h>
+#include "eventloop_int.hpp"
 
 void EventLoop(Epoll& ep)
 {
@@ -14,9 +16,7 @@ void EventLoop(Epoll& ep)
 
 		for(unsigned i=0;i<events.size();i++)
 		{
-			if(events[i].data.fd < 0) //TODO バグなので対処すべきかも
-				continue;
-
+			// std::cout<<ep.IsListen(events[i].data.fd)<<":"<<events[i].data.fd<<": "<<get_epoll_events_str(events[i].events)<<std::endl;
 			if(ep.IsListen(events[i].data.fd))
 				ep.Accept(events[i].data.fd);
 			else
@@ -26,14 +26,16 @@ void EventLoop(Epoll& ep)
 				{
 					if(client.Read(client_fd) <= 0)
 						close(client_fd);
-					else if(!client.IsRead(client_fd)) // Readが終わったら
+					else if(!client.IsRead(client_fd))
 						ep.Mod(client_fd, EPOLLOUT);
 				}
 				else if(events[i].events & EPOLLOUT)
 				{
 					client.Write(client_fd);
-					if(!client.IsRead(client_fd)) // writeが終わったら
-						close(client_fd);
+					if(client.IsRead(client_fd))
+					{
+						ep.Mod(client_fd, EPOLLIN);
+					}
 				}
 			}
 		}
@@ -42,9 +44,10 @@ void EventLoop(Epoll& ep)
 
 int main()
 {
-	Epoll ep;
-	ep.AddListener(8080);
 	try {
+		Epoll ep;
+		ep.AddListener(8080);
+		ep.AddListener(8081);
 		EventLoop(ep);
 	} catch (const std::exception& e) {
 		std::cout<<e.what()<<std::endl;

@@ -14,6 +14,7 @@ class Client
 		bool IsWriteEnd(int fd);
 		bool IsRead(int fd);
 	private:
+		static const unsigned int buffer_size = 8096;
 		struct ClientData
 		{
 			std::string buffer;

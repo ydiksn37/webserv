@@ -60,7 +60,7 @@ void Epoll::Accept(int fd)
 const std::vector<epoll_event>& Epoll::WaitEvents()
 {
 	events_.resize(max_events_);
-	int events_size = epoll_wait(epfd_,events_.data() , events_.size(), -1); // TODO 適切なタイムアウトを導入
+	int events_size = epoll_wait(epfd_,events_.data() , events_.size(), -1);
 	if(events_size < 0)
 		throw strerror(errno);
 	events_.resize(events_size);
