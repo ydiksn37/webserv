@@ -1,6 +1,6 @@
 #include "../../includes/config/LocationContext.hpp"
 
-LocationContext::LocationContext() {}
+LocationContext::LocationContext() : _path("") {}
 
 LocationContext::~LocationContext() {}
 
@@ -11,7 +11,9 @@ LocationContext& LocationContext::operator=(const LocationContext& other) {
 		this->_path = other._path;
 	}
 	return *this;
-} 
+}
+
+LocationContext::LocationContext(const std::string& path) : _path(path) {}
 
 void LocationContext::setPath(const std::string& path) {
 	this->_path = path;

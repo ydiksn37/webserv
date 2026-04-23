@@ -1,15 +1,28 @@
 #include "../../includes/config/ServerContext.hpp"
 
-ServerContext::ServerContext() : _port(80), _server_name("") {}
+ServerContext::ServerContext()
+	: _port(80),
+		_server_name(""),
+		_client_max_body_size(0),
+		_error_pages(),
+		_locations() {}
 
 ServerContext::~ServerContext() {}
 
-ServerContext::ServerContext(const ServerContext& other) : _port(other._port), _server_name(other._server_name) {}
+ServerContext::ServerContext(const ServerContext& other)
+	: _port(other._port), 
+		_server_name(other._server_name),
+		_client_max_body_size(other._client_max_body_size),
+		_error_pages(other._error_pages),
+		_locations(other._locations) {}
 
 ServerContext& ServerContext::operator=(const ServerContext& other) {
 	if (this != &other) {
 		this->_port = other._port;
 		this->_server_name = other._server_name;
+		this->_client_max_body_size = other._client_max_body_size;
+		this->_error_pages = other._error_pages;
+		this->_locations = other._locations;
 	}
 	return *this;
 } 
@@ -22,10 +35,34 @@ void ServerContext::setServerName(const std::string& name) {
 	this->_server_name = name;
 }
 
+void ServerContext::setClientMaxBodySize(size_t size) {
+	this->_client_max_body_size = size;
+}
+
+void ServerContext::setErrorPage(int status_code, const std::string& path) {
+	this->_error_pages[status_code] = path;
+}
+
+void ServerContext::setLocation(const LocationContext& location) {
+	this->_locations.push_back(location);
+}
+
 int ServerContext::getPort() const{
 	return this->_port;
 }
 
 const std::string& ServerContext::getServerName() const {
 	return this->_server_name;
+}
+
+size_t ServerContext::getClientMaxBodySize() const {
+	return this->_client_max_body_size;
+}
+
+const std::map<int, std::string>& ServerContext::getErrorPages() const {
+	return this->_error_pages;
+}
+
+const std::vector<LocationContext>& ServerContext::getLocations() const {
+	return this->_locations;
 }

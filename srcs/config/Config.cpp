@@ -1,6 +1,6 @@
 #include "../../includes/config/Config.hpp"
 
-Config::Config() {}
+Config::Config() : _servers() {}
 
 Config::~Config() {}
 
@@ -51,6 +51,42 @@ bool Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 				return false;
 			}
 		}
+		else if (tokens[i] == "location") {
+			if (!parseLocationBlock(tokens, i, server)) {
+				return false;
+			}
+		}
+		else if (tokens[i] == "client_max_body_size") {
+			i++;
+			if (i >= tokens.size()) {
+				return false;
+			}
+			server.setClientMaxBodySize(std::strtoul(tokens[i].c_str(), NULL, 10));
+			i++;
+			if (i >= tokens.size() || tokens[i] != ";") {
+				std::cerr << "Error: Expected ';' after client_max_body_size" << std::endl;
+				return false;
+			}
+		}
+		else if (tokens[i] == "error_page") {
+			i++;
+			std::vector<int> codes;
+			while (i < tokens.size() && tokens[i] != ";" && isdigit(tokens[i][0])) {
+				codes.push_back(std::atoi(tokens[i].c_str()));
+				i++;
+			}
+			if (i >= tokens.size() || tokens[i] == ";") {
+				return false;
+			}
+			std::string path = tokens[i];
+			for (size_t j = 0; j < codes.size(); ++j) {
+				server.setErrorPage(codes[j], path);
+			}
+			i++;
+			if (i >= tokens.size() || tokens[i] != ";") {
+				return false;
+			}
+		}
 		else {
 			std::cerr << "Error: Unknown directive '" << tokens[i] << "'" << std::endl;
 			return false;
@@ -62,6 +98,33 @@ bool Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 		return true;
 	}
 	std::cerr << "Error: Server block not closed with '}'" << std::endl;
+	return false;
+}
+
+bool Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& i, ServerContext& server) {
+	i++;
+	if (i >= tokens.size()) {
+		return false;
+	}
+	LocationContext location(tokens[i]);
+	i++;
+	if (i >= tokens.size() || tokens[i] != "{") {
+		std::cerr << "Error: Expected '{' after location path" << std::endl;
+		return false;
+	}
+	i++;
+	while (i < tokens.size() && tokens[i] != "}") {
+		// ここに allow_methods などのパース処理を追加していく
+		// 例: if (tokens[i] == "allow_methods") { ... }
+		// 未知のディレクティブが来ても、とりあえず今はスキップするかエラーにする
+		// (開発初期は警告だけ出してスキップするのもありです)
+		i++;
+	}
+	if (i < tokens.size() && tokens[i] == "}") {
+		server.setLocation(location);
+		return true;
+	}
+	std::cerr << "Error: Location block not closed with '}'" << std::endl;
 	return false;
 }
 

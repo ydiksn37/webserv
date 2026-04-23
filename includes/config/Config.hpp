@@ -13,6 +13,7 @@ class Config {
 	private:
 		std::vector<ServerContext> _servers;
 		bool parseServerBlock(const std::vector<std::string>& tokens, size_t& i);
+		bool parseLocationBlock(const std::vector<std::string>& tokens, size_t& i, ServerContext& server);
 
 	public:
 		Config();

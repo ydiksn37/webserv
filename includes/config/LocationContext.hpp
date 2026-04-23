@@ -15,6 +15,8 @@ class LocationContext {
 		LocationContext(const LocationContext& other);
 		LocationContext& operator=(const LocationContext& other);
 
+		LocationContext(const std::string& path);
+
 		void setPath(const std::string& path);
 		const std::string& getPath() const;
 };
