@@ -1,4 +1,8 @@
 #include "Client.hpp"
+#include <cstddef>
+#include <iostream>
+#include <ostream>
+#include <string>
 #include <unistd.h>
 #include "eventloop_int.hpp"
 
@@ -13,37 +17,72 @@ Client::Client(){}
 
 int Client::Read(int fd)
 {
-	client_[fd].is_read = 1;
 	char tmp_buffer[buffer_size];
-	int read_size = read(fd, tmp_buffer, buffer_size - 1);
+	int read_size = read(fd, tmp_buffer, buffer_size);
 	if(read_size <= 0)
 	{
 		client_.erase(fd);
-		return read_size;
+		return -1;
 	}
-	tmp_buffer[read_size] = '\0';
-	client_[fd].buffer.append(tmp_buffer);
+	client_[fd].read_buffer.append(tmp_buffer,read_size);
 
-	if(endswith(client_[fd].buffer, "\r\n\r\n")) // TODO bodyがある場合にも対応
+	while(true)
 	{
-		// GetContentLength(client_[fd].buffer);
-		client_[fd].is_read = 0;
-		client_[fd].buffer = Engine(client_[fd].buffer);
+		if(!client_[fd].header_parsed)
+		{
+			size_t pos = client_[fd].read_buffer.find("\r\n\r\n");
+			if(pos == std::string::npos)
+				break;
+			client_[fd].header_parsed = true;
+			client_[fd].header_length = pos + 4;
+			client_[fd].body_length = GetContentLength(client_[fd].read_buffer.substr(0,client_[fd].header_length));
+		}
+		if(client_[fd].header_parsed)
+		{
+			unsigned total_length = client_[fd].header_length + client_[fd].body_length;
+			if(client_[fd].read_buffer.size() >= total_length)
+			{
+				std::string request = client_[fd].read_buffer.substr(0,total_length);
+				std::cout<<"\033[95m[READ]\033[0m "<<std::endl;
+				std::cout<<request<<std::endl;
+				client_[fd].write_buffer.append(Engine(request));
+				client_[fd].read_buffer.erase(0,total_length);
+				client_[fd].header_parsed = false;
+				client_[fd].header_length = 0;
+				client_[fd].body_length = 0;
+
+			}
+			else
+				break;
+		}
 	}
-	return read_size;
+	return 0;
 }
 
 void Client::Write(int fd)
 {
-	client_[fd].is_read = 0;
-	int write_size = write(fd, client_[fd].buffer.c_str(), client_[fd].buffer.size());
-	client_[fd].buffer.erase(0,write_size);
-
-	if(client_[fd].buffer.empty())
-		client_.erase(fd);
+	int write_size = write(fd, client_[fd].write_buffer.c_str(), client_[fd].write_buffer.size());
+	std::cout<<"\033[32m[WRITE] \033[0m"<<std::endl;
+	std::cout<<client_[fd].write_buffer.substr(0,write_size)<<std::endl;
+	client_[fd].write_buffer.erase(0,write_size);
 }
 
-bool Client::IsRead(int fd)
+bool Client::WriteBegin(int fd)
 {
-	return client_[fd].is_read;
+	if(client_[fd].current_epoll_events==EPOLLIN && client_[fd].write_buffer.size())
+	{
+		client_[fd].current_epoll_events=EPOLLIN | EPOLLOUT;
+		return true;
+	}
+	return false;
+}
+
+bool Client::WriteEnd(int fd)
+{
+	if(client_[fd].current_epoll_events==(EPOLLIN | EPOLLOUT) && client_[fd].write_buffer.empty())
+	{
+		client_[fd].current_epoll_events=EPOLLIN;
+		return true;
+	}
+	return false;
 }

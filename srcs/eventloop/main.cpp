@@ -16,7 +16,7 @@ void EventLoop(Epoll& ep)
 
 		for(unsigned i=0;i<events.size();i++)
 		{
-			std::cout<<ep.IsListen(events[i].data.fd)<<":"<<events[i].data.fd<<": "<<get_epoll_events_str(events[i].events)<<std::endl;
+			std::cout<<"\033[36m"<<get_epoll_events_str(events[i].events)<<": \033[0m"<<(ep.IsListen(events[i].data.fd)?"Listen_fd":"Client_fd")<<":"<<events[i].data.fd<<std::endl;
 			if(ep.IsListen(events[i].data.fd))
 				ep.Accept(events[i].data.fd);
 			else
@@ -24,18 +24,16 @@ void EventLoop(Epoll& ep)
 				int client_fd = events[i].data.fd;
 				if(events[i].events & EPOLLIN)
 				{
-					if(client.Read(client_fd) <= 0)
+					if(client.Read(client_fd) < 0)
 						close(client_fd);
-					else if(!client.IsRead(client_fd))
-						ep.Mod(client_fd, EPOLLOUT);
+					else if(client.WriteBegin(client_fd))
+						ep.Mod(client_fd, EPOLLIN | EPOLLOUT);
 				}
-				else if(events[i].events & EPOLLOUT)
+				if(events[i].events & EPOLLOUT)
 				{
 					client.Write(client_fd);
-					if(client.IsRead(client_fd))
-					{
+					if(client.WriteEnd(client_fd))
 						ep.Mod(client_fd, EPOLLIN);
-					}
 				}
 			}
 		}
