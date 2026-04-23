@@ -29,7 +29,9 @@ bool Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 	while (i < tokens.size() && tokens[i] != "}") {
 		if (tokens[i] == "listen") {
 			i++;
-			if (i >= tokens.size()) return false;
+			if (i >= tokens.size()) {
+				return false;
+			}
 			std::string listen_val = tokens[i];
 			size_t colon_pos = listen_val.find(':');
 			if (colon_pos != std::string::npos) {
