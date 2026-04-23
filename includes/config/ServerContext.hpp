@@ -9,10 +9,10 @@
 
 class ServerContext {
 	private:
-		int                          _port;
-		std::string                  _server_name;
-		size_t                       _client_max_body_size;
-		std::map<int, std::string>   _error_pages;
+		int _port;
+		std::string _server_name;
+		size_t _client_max_body_size;
+		std::map<int, std::string> _error_pages;
 		std::vector<LocationContext> _locations;
 
 	public:

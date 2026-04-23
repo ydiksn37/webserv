@@ -29,10 +29,16 @@ bool Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 	while (i < tokens.size() && tokens[i] != "}") {
 		if (tokens[i] == "listen") {
 			i++;
-			if (i >= tokens.size()) {
-				return false;
+			if (i >= tokens.size()) return false;
+			std::string listen_val = tokens[i];
+			size_t colon_pos = listen_val.find(':');
+			if (colon_pos != std::string::npos) {
+				std::string ip = listen_val.substr(0, colon_pos);
+				std::string port_str = listen_val.substr(colon_pos + 1);
+				server.setPort(std::atoi(port_str.c_str()));
+			} else {
+				server.setPort(std::atoi(listen_val.c_str()));
 			}
-			server.setPort(std::atoi(tokens[i].c_str()));
 			i++;
 			if (i >= tokens.size() || tokens[i] != ";") {
 				std::cerr << "Error: Expected ';' after listen port" << std::endl;
@@ -106,25 +112,92 @@ bool Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 	if (i >= tokens.size()) {
 		return false;
 	}
+
 	LocationContext location(tokens[i]);
+
 	i++;
 	if (i >= tokens.size() || tokens[i] != "{") {
-		std::cerr << "Error: Expected '{' after location path" << std::endl;
 		return false;
 	}
 	i++;
 	while (i < tokens.size() && tokens[i] != "}") {
-		// ここに allow_methods などのパース処理を追加していく
-		// 例: if (tokens[i] == "allow_methods") { ... }
-		// 未知のディレクティブが来ても、とりあえず今はスキップするかエラーにする
-		// (開発初期は警告だけ出してスキップするのもありです)
-		i++;
+		if (tokens[i] == "allow_methods" || tokens[i] == "allow_method") {
+			i++;
+			while (i < tokens.size() && tokens[i] != ";") {
+				location.setAllowedMethod(tokens[i]);
+				i++;
+			}
+		}
+		else if (tokens[i] == "root") {
+			i++;
+			location.setRoot(tokens[i]);
+			i++;
+		}
+		else if (tokens[i] == "alias") {
+			i++;
+			location.setAlias(tokens[i]);
+			i++;
+		}
+		else if (tokens[i] == "index") {
+			i++;
+			while (i < tokens.size() && tokens[i] != ";") {
+				location.setIndex(tokens[i]);
+				i++;
+			}
+		}
+		else if (tokens[i] == "autoindex") {
+			i++;
+			location.setAutoindex(tokens[i] == "on");
+			i++;
+		}
+		else if (tokens[i] == "return") {
+			i++;
+			int code = std::atoi(tokens[i].c_str());
+			i++;
+			location.setRedirect(code, tokens[i]);
+			i++;
+		}
+		else if (tokens[i] == "upload_enable") {
+			i++;
+			location.setUploadEnable(tokens[i] == "on");
+			i++;
+		}
+		else if (tokens[i] == "upload_store") {
+			i++;
+			location.setUploadStore(tokens[i]);
+			i++;
+		}
+		else if (tokens[i] == "cgi_extension") {
+			i++;
+			while (i < tokens.size() && tokens[i] != ";") {
+				i++;
+			}
+		}
+		else if (tokens[i] == "cgi_path") {
+			i++;
+			if (i >= tokens.size()) return false;
+			std::string ext = tokens[i];
+			i++;
+			if (i >= tokens.size()) return false;
+			std::string path = tokens[i];
+			
+			location.setCgiPath(ext, path);
+			i++;
+		}
+		else {
+			std::cerr << "Warning: Unknown location directive '" << tokens[i] << "'" << std::endl;
+			while (i < tokens.size() && tokens[i] != ";" && tokens[i] != "}") {
+				i++;
+			}
+		}
+		if (i < tokens.size() && tokens[i] == ";") {
+			i++;
+		}
 	}
 	if (i < tokens.size() && tokens[i] == "}") {
 		server.setLocation(location);
 		return true;
 	}
-	std::cerr << "Error: Location block not closed with '}'" << std::endl;
 	return false;
 }
 

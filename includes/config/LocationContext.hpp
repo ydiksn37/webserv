@@ -4,10 +4,27 @@
 # include <iostream>
 # include <string>
 # include <vector>
+# include <map>
+
+enum HttpMethod {
+	METHOD_GET    = 1 << 0, // 0001
+	METHOD_POST   = 1 << 1, // 0010
+	METHOD_DELETE = 1 << 2  // 0100
+};
 
 class LocationContext {
 	private:
 		std::string _path;
+		unsigned char _allowed_methods;
+		std::string _root;
+		std::string _alias;
+		std::vector<std::string> _index;
+		bool _autoindex;
+		int _redirect_code;
+		std::string _redirect_url;
+		bool _upload_enable;
+		std::string _upload_store;
+		std::map<std::string, std::string> _cgi_info;
 
 	public:
 		LocationContext();
@@ -18,7 +35,27 @@ class LocationContext {
 		LocationContext(const std::string& path);
 
 		void setPath(const std::string& path);
+		void setAllowedMethod(const std::string& method);
+		void setRoot(const std::string& root);
+		void setAlias(const std::string& alias);
+		void setIndex(const std::string& index);
+		void setAutoindex(bool autoindex);
+		void setRedirect(int code, const std::string& url);
+		void setUploadEnable(bool enable);
+		void setUploadStore(const std::string& store);
+		void setCgiPath(const std::string& ext, const std::string& path);
+
 		const std::string& getPath() const;
+		bool getIsMethodAllowed(const std::string& method) const;
+		const std::string& getRoot() const;
+		const std::string& getAlias() const;
+		const std::vector<std::string>& getIndex() const;
+		bool getAutoindex() const;
+		int getRedirectCode() const;
+		const std::string& getRedirectUrl() const;
+		bool getUploadEnable() const;
+		const std::string& getUploadStore() const;
+		const std::map<std::string, std::string>& getCgiInfo() const;
 };
 
 #endif
