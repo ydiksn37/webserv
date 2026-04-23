@@ -16,7 +16,7 @@ void EventLoop(Epoll& ep)
 
 		for(unsigned i=0;i<events.size();i++)
 		{
-			// std::cout<<ep.IsListen(events[i].data.fd)<<":"<<events[i].data.fd<<": "<<get_epoll_events_str(events[i].events)<<std::endl;
+			std::cout<<ep.IsListen(events[i].data.fd)<<":"<<events[i].data.fd<<": "<<get_epoll_events_str(events[i].events)<<std::endl;
 			if(ep.IsListen(events[i].data.fd))
 				ep.Accept(events[i].data.fd);
 			else

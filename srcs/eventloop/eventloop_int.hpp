@@ -4,6 +4,6 @@
 
 int CreateSocket(int port);
 std::string Engine(const std::string& request); // for test
-std::string get_epoll_events_str(uint32_t events);
+std::string get_epoll_events_str(unsigned events);
 
 #endif
