@@ -4,49 +4,40 @@
 #include <cctype>
 #include <cstdlib>
 
-std::string	toLower(std::string s)
+static std::string	toLower(std::string s)
 {
-	for (std::string::iterator it = s.begin(); it != s.end(); ++it)
+	for (std::string::iterator	it = s.begin(); it != s.end(); ++it)
 	{
 		*it = static_cast<char>(std::tolower(static_cast<unsigned char>(*it)));
 	}
 	return (s);
 }
 
-std::string	trim(const std::string &s)
+static std::string	trim(const std::string &s)
 {
-	size_t	first = s.find_first_not_of(" \t");
+	size_t	first;
+	size_t	last;
+
+	first = s.find_first_not_of(" \t");
 	if (first == std::string::npos)
+	{
 		return ("");
-	size_t	last = s.find_last_not_of(" \t");
+	}
+	last = s.find_last_not_of(" \t");
 	return (s.substr(first, (last - first + 1)));
 }
 
-HttpRequest::HttpRequest():
-	_state(REQUEST_LINE),
-	_method(""),
-	_uri(""),
-	_path(""),
-	_query(""),
-	_version(""),
-	_headers(),
-	_body(""),
-	_buffer(""),
-	_chunkSize(0)
+HttpRequest::HttpRequest()
+	: _state(REQUEST_LINE), _method(""), _uri(""), _path(""), _query(""),
+	  _version(""), _headers(), _body(""), _buffer(""), _empty(""), _chunkSize(0)
 {
 }
 
-HttpRequest::HttpRequest(const HttpRequest &other):
-	_state(other._state),
-	_method(other._method),
-	_uri(other._uri),
-	_path(other._path),
-	_query(other._query),
-	_version(other._version),
-	_headers(other._headers),
-	_body(other._body),
-	_buffer(other._buffer),
-	_chunkSize(other._chunkSize)
+HttpRequest::HttpRequest(const HttpRequest &other)
+	: _state(other._state), _method(other._method), _uri(other._uri),
+	  _path(other._path), _query(other._query), _version(other._version),
+	  _headers(other._headers), _body(other._body), _buffer(other._buffer),
+	  _empty(other._empty), _chunkSize(other._chunkSize)
 {
 }
 
@@ -63,25 +54,30 @@ HttpRequest&	HttpRequest::operator=(const HttpRequest &other)
 		this->_headers = other._headers;
 		this->_body = other._body;
 		this->_buffer = other._buffer;
+		this->_empty = other._empty;
 		this->_chunkSize = other._chunkSize;
 	}
 	return (*this);
 }
 
-HttpRequest::~HttpRequest() { }
+HttpRequest::~HttpRequest()
+{
+}
 
 void	HttpRequest::parse(const std::string &raw_data)
 {
-	this->_buffer += raw_data;
 	size_t	pos;
 
+	this->_buffer += raw_data;
 	while (this->_state != COMPLETE && this->_state != ERROR)
 	{
 		if (this->_state == REQUEST_LINE || this->_state == HEADERS)
 		{
 			pos = this->_buffer.find("\r\n");
 			if (pos == std::string::npos)
+			{
 				break ;
+			}
 
 			std::string	line = this->_buffer.substr(0, pos);
 			this->_buffer.erase(0, pos + 2);
@@ -123,11 +119,13 @@ void	HttpRequest::parse(const std::string &raw_data)
 			{
 				pos = this->_buffer.find("\r\n");
 				if (pos == std::string::npos)
+				{
 					break ;
+				}
 				
 				std::string	size_line = this->_buffer.substr(0, pos);
-				char *endptr;
-				long size = std::strtol(size_line.c_str(), &endptr, 16);
+				char		*endptr;
+				long		size = std::strtol(size_line.c_str(), &endptr, 16);
 
 				if (*endptr != '\0' && *endptr != ';')
 				{
@@ -167,9 +165,11 @@ void	HttpRequest::parse(const std::string &raw_data)
 		{
 			pos = this->_buffer.find("\r\n");
 			if (pos == std::string::npos)
+			{
 				break ;
+			}
 			
-			std::string line = this->_buffer.substr(0, pos);
+			std::string	line = this->_buffer.substr(0, pos);
 			this->_buffer.erase(0, pos + 2);
 
 			if (line.empty())
@@ -232,25 +232,28 @@ const std::string&	HttpRequest::getBody() const
 
 const std::string&	HttpRequest::getHeader(const std::string& key) const
 {
-	std::map<std::string, std::string>::const_iterator	it = this->_headers.find(::toLower(key));
+	std::map<std::string, std::string>::const_iterator	it;
+
+	it = this->_headers.find(::toLower(key));
 	if (it != this->_headers.end())
 	{
 		return (it->second);
 	}
-	static const std::string	empty = "";
-	return (empty);
+	return (this->_empty);
 }
 
 void	HttpRequest::_parseRequestLine(std::string& line)
 {
 	if (line.empty())
-		return;
+	{
+		return ;
+	}
 
 	std::stringstream	ss(line);
 	if (!(ss >> this->_method >> this->_uri >> this->_version))
 	{
 		this->_state = ERROR;
-		return;
+		return ;
 	}
 
 	size_t	query_pos = this->_uri.find('?');
@@ -284,14 +287,14 @@ void	HttpRequest::_parseHeader(std::string& line)
 		{
 			this->_state = COMPLETE;
 		}
-		return;
+		return ;
 	}
 
 	size_t	colon = line.find(':');
 	if (colon != std::string::npos)
 	{
-		std::string	key = toLower(trim(line.substr(0, colon)));
-		std::string	value = trim(line.substr(colon + 1));
+		std::string	key = ::toLower(::trim(line.substr(0, colon)));
+		std::string	value = ::trim(line.substr(colon + 1));
 
 		if (this->_headers.count(key))
 		{

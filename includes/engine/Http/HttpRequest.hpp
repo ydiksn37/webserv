@@ -46,6 +46,7 @@ private:
 	std::map<std::string, std::string>	_headers;
 	std::string							_body;
 	std::string							_buffer;
+	std::string							_empty;
 	size_t								_chunkSize;
 
 	void	_parseRequestLine(std::string &line);
