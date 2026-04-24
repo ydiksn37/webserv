@@ -25,7 +25,10 @@ void EventLoop(Epoll& ep)
 				if(events[i].events & EPOLLIN)
 				{
 					if(client.Read(client_fd) < 0)
+					{
+						std::cout<<"Client_fd: "<<client_fd<<" Disconnected."<<std::endl;
 						close(client_fd);
+					}
 					else if(client.WriteBegin(client_fd))
 						ep.Mod(client_fd, EPOLLIN | EPOLLOUT);
 				}
