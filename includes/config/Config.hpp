@@ -24,6 +24,8 @@ class Config {
 		const std::vector<ServerContext>& getServers() const;
 		std::vector<std::string> tokenize(const std::string& content);
 		bool loadFile(const std::string& filename);
+		const ServerContext* getServer(int port, const std::string& host_name) const;
+		const LocationContext* matchLocation(const ServerContext* server, const std::string& uri) const;
 };
 
 #endif

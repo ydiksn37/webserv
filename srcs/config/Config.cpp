@@ -49,13 +49,11 @@ bool Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 		}
 		else if (tokens[i] == "server_name") {
 			i++;
-			if (i >= tokens.size()) {
-				return false;
+			while (i < tokens.size() && tokens[i] != ";") {
+				server.setServerName(tokens[i]);
+				i++;
 			}
-			server.setServerName(tokens[i]);
-			i++;
 			if (i >= tokens.size() || tokens[i] != ";") {
-				std::cerr << "Error: Expected ';' after server_name" << std::endl;
 				return false;
 			}
 		}
@@ -260,4 +258,41 @@ bool Config::loadFile(const std::string& filename) {
 		}
 	}
 	return true;
+}
+
+const ServerContext* Config::getServer(int port, const std::string& host_name) const {
+	const ServerContext* default_server = NULL;
+
+	for (size_t i = 0; i < this->_servers.size(); ++i) {
+		if (this->_servers[i].getPort() == port) {
+			if (default_server == NULL) {
+				default_server = &this->_servers[i];
+			}
+			if (this->_servers[i].getIsServerNameIncluded(host_name)) {
+				return &this->_servers[i];
+			}
+		}
+	}
+	return default_server;
+}
+
+const LocationContext* Config::matchLocation(const ServerContext* server, const std::string& uri) const {
+	if (server == NULL) return NULL;
+
+	const LocationContext* best_match = NULL;
+	size_t max_match_length = 0;
+	const std::vector<LocationContext>& locations = server->getLocations();
+	for (size_t i = 0; i < locations.size(); ++i) {
+		const std::string& path = locations[i].getPath();
+		if (uri.find(path) == 0) {
+			bool is_boundary_safe = (path == "/" || uri.length() == path.length() || uri[path.length()] == '/');
+			if (is_boundary_safe) {
+				if (path.length() > max_match_length) {
+					max_match_length = path.length();
+					best_match = &locations[i];
+				}
+			}
+		}
+	}
+	return best_match;
 }

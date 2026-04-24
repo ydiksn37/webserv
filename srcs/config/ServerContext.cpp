@@ -2,7 +2,7 @@
 
 ServerContext::ServerContext()
 	: _port(80),
-		_server_name(""),
+		_server_names(),
 		_client_max_body_size(0),
 		_error_pages(),
 		_locations() {}
@@ -11,7 +11,7 @@ ServerContext::~ServerContext() {}
 
 ServerContext::ServerContext(const ServerContext& other)
 	: _port(other._port), 
-		_server_name(other._server_name),
+		_server_names(other._server_names),
 		_client_max_body_size(other._client_max_body_size),
 		_error_pages(other._error_pages),
 		_locations(other._locations) {}
@@ -19,7 +19,7 @@ ServerContext::ServerContext(const ServerContext& other)
 ServerContext& ServerContext::operator=(const ServerContext& other) {
 	if (this != &other) {
 		this->_port = other._port;
-		this->_server_name = other._server_name;
+		this->_server_names = other._server_names;
 		this->_client_max_body_size = other._client_max_body_size;
 		this->_error_pages = other._error_pages;
 		this->_locations = other._locations;
@@ -32,7 +32,7 @@ void ServerContext::setPort(int port) {
 }
 
 void ServerContext::setServerName(const std::string& name) {
-	this->_server_name = name;
+	this->_server_names.insert(name);
 }
 
 void ServerContext::setClientMaxBodySize(size_t size) {
@@ -51,8 +51,12 @@ int ServerContext::getPort() const{
 	return this->_port;
 }
 
-const std::string& ServerContext::getServerName() const {
-	return this->_server_name;
+const std::set<std::string>& ServerContext::getServerNames() const {
+	return this->_server_names;
+}
+
+bool ServerContext::getIsServerNameIncluded(const std::string& name) const {
+	return this->_server_names.find(name) != this->_server_names.end();
 }
 
 size_t ServerContext::getClientMaxBodySize() const {
