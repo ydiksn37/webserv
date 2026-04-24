@@ -1,7 +1,5 @@
 #include "../includes/config/ServerContext.hpp"
 #include "../includes/config/Config.hpp"
-#include <iostream>
-#include <exception>
 
 void simulateRequest(const Config& config, int port, const std::string& host, const std::string& uri) {
 	std::cout << "\n[Request] Port: " << port << " | Host: " << host << " | URI: " << uri << std::endl;

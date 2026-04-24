@@ -7,26 +7,26 @@
 # include <map>
 
 enum HttpMethod {
-	METHOD_GET    = 1 << 0, // 0001
-	METHOD_POST   = 1 << 1, // 0010
-	METHOD_DELETE = 1 << 2  // 0100
+	METHOD_GET    = 1 << 0,
+	METHOD_POST   = 1 << 1,
+	METHOD_DELETE = 1 << 2
 };
 
 class LocationContext {
 	private:
-		std::string _path;
-		unsigned char _allowed_methods;
-		std::string _root;
-		std::string _alias;
-		std::vector<std::string> _index;
-		bool _autoindex;
-		int _redirect_code;
-		std::string _redirect_url;
-		bool _upload_enable;
-		std::string _upload_store;
-		std::map<std::string, std::string> _cgi_info;
-		size_t _client_max_body_size;
-		std::map<int, std::string> _error_pages;
+		std::string													_path;
+		unsigned char												_allowed_methods;
+		std::string													_root;
+		std::string													_alias;
+		std::vector<std::string>						_index;
+		bool																_autoindex;
+		int																	_redirect_code;
+		std::string													_redirect_url;
+		bool																_upload_enable;
+		std::string													_upload_store;
+		std::map<std::string, std::string>	_cgi_info;
+		size_t															_client_max_body_size;
+		std::map<int, std::string>					_error_pages;
 
 	public:
 		LocationContext();
@@ -49,19 +49,19 @@ class LocationContext {
 		void setClientMaxBodySize(size_t size);
 		void setErrorPage(int status_code, const std::string& path);
 
-		const std::string& getPath() const;
-		bool getIsMethodAllowed(const std::string& method) const;
-		const std::string& getRoot() const;
-		const std::string& getAlias() const;
-		const std::vector<std::string>& getIndex() const;
-		bool getAutoindex() const;
-		int getRedirectCode() const;
-		const std::string& getRedirectUrl() const;
-		bool getUploadEnable() const;
-		const std::string& getUploadStore() const;
-		const std::map<std::string, std::string>& getCgiInfo() const;
-		size_t getClientMaxBodySize() const;
-		const std::map<int, std::string>& getErrorPages() const;
+		const std::string&												getPath() const;
+		bool																			getIsMethodAllowed(const std::string& method) const;
+		const std::string&												getRoot() const;
+		const std::string&												getAlias() const;
+		const std::vector<std::string>&						getIndex() const;
+		bool																			getAutoindex() const;
+		int																				getRedirectCode() const;
+		const std::string&												getRedirectUrl() const;
+		bool																			getUploadEnable() const;
+		const std::string&												getUploadStore() const;
+		const std::map<std::string, std::string>&	getCgiInfo() const;
+		size_t																		getClientMaxBodySize() const;
+		const std::map<int, std::string>&					getErrorPages() const;
 
 		void validate() const;
 };

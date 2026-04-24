@@ -14,7 +14,7 @@
 
 class Config {
 	private:
-		std::vector<ServerContext> _servers;
+		std::vector<ServerContext>	_servers;
 		void parseServerBlock(const std::vector<std::string>& tokens, size_t& i);
 		void parseLocationBlock(const std::vector<std::string>& tokens, size_t& i, ServerContext& server);
 		void validateConfiguration() const;
@@ -26,11 +26,12 @@ class Config {
 		Config(const Config& other);
 		Config& operator=(const Config& other);
 
-		const std::vector<ServerContext>& getServers() const;
-		std::vector<std::string> tokenize(const std::string& content);
-		void loadFile(const std::string& filename);
-		const ServerContext* getServer(int port, const std::string& host_name) const;
-		const LocationContext* matchLocation(const ServerContext* server, const std::string& uri) const;
+		const std::vector<ServerContext>&	getServers() const;
+
+		std::vector<std::string>	tokenize(const std::string& content);
+		void											loadFile(const std::string& filename);
+		const ServerContext*			getServer(int port, const std::string& host_name) const;
+		const LocationContext*		matchLocation(const ServerContext* server, const std::string& uri) const;
 
 		class ConfigException : public std::runtime_error {
 			public:
