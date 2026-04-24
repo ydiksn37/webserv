@@ -25,7 +25,7 @@ ServerContext& ServerContext::operator=(const ServerContext& other) {
 		this->_locations = other._locations;
 	}
 	return *this;
-} 
+}
 
 void ServerContext::setPort(int port) {
 	this->_port = port;
