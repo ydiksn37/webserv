@@ -15,10 +15,11 @@
 class Config {
 	private:
 		std::vector<ServerContext>	_servers;
-		void parseServerBlock(const std::vector<std::string>& tokens, size_t& i);
-		void parseLocationBlock(const std::vector<std::string>& tokens, size_t& i, ServerContext& server);
-		void validateConfiguration() const;
-		long parseLong(const std::string& str) const;
+		void					parseServerBlock(const std::vector<std::string>& tokens, size_t& i);
+		void					parseLocationBlock(const std::vector<std::string>& tokens, size_t& i, ServerContext& server);
+		void					validateConfiguration() const;
+		long					parseLong(const std::string& str) const;
+		unsigned long	parseUnsignedLong(const std::string& str) const;
 
 	public:
 		Config();

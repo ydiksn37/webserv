@@ -10,7 +10,7 @@ LocationContext::LocationContext()
 		_redirect_url(""),
 		_upload_enable(false),
 		_upload_store(""),
-		_client_max_body_size(0) {}
+		_client_max_body_size(1048576) {}
 
 LocationContext::~LocationContext() {}
 
@@ -25,6 +25,7 @@ LocationContext::LocationContext(const LocationContext& other)
 		_redirect_url(other._redirect_url),
 		_upload_enable(other._upload_enable),
 		_upload_store(other._upload_store),
+		_cgi_extensions(other._cgi_extensions),
 		_cgi_info(other._cgi_info),
 		_client_max_body_size(other._client_max_body_size),
 		_error_pages(other._error_pages) {}
@@ -41,6 +42,7 @@ LocationContext& LocationContext::operator=(const LocationContext& other) {
 		this->_redirect_url = other._redirect_url;
 		this->_upload_enable = other._upload_enable;
 		this->_upload_store = other._upload_store;
+		this->_cgi_extensions = other._cgi_extensions;
 		this->_cgi_info = other._cgi_info;
 		this->_client_max_body_size = other._client_max_body_size;
 		this->_error_pages = other._error_pages;
@@ -58,7 +60,7 @@ LocationContext::LocationContext(const std::string& path)
 		_redirect_url(""),
 		_upload_enable(false),
 		_upload_store(""),
-		_client_max_body_size(0) {}
+		_client_max_body_size(1048576) {}
 
 void LocationContext::setPath(const std::string& path) {
 	this->_path = path;
@@ -101,6 +103,10 @@ void LocationContext::setUploadEnable(bool enable) {
 
 void LocationContext::setUploadStore(const std::string& store) {
 	this->_upload_store = store;
+}
+
+void LocationContext::setCgiExtension(const std::string& ext) {
+	this->_cgi_extensions.push_back(ext);
 }
 
 void LocationContext::setCgiPath(const std::string& ext, const std::string& path) {
@@ -160,6 +166,10 @@ bool LocationContext::getUploadEnable() const {
 
 const std::string& LocationContext::getUploadStore() const {
 	return this->_upload_store;
+}
+
+const std::vector<std::string>& LocationContext::getCgiExtensions() const {
+	return this->_cgi_extensions;
 }
 
 const std::map<std::string, std::string>& LocationContext::getCgiInfo() const {

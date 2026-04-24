@@ -3,7 +3,7 @@
 ServerContext::ServerContext()
 	: _port(80),
 		_server_names(),
-		_client_max_body_size(0),
+		_client_max_body_size(1048576),
 		_error_pages(),
 		_locations() {}
 

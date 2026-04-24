@@ -63,7 +63,7 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 			if (i >= tokens.size()) {
 				throw ConfigException("Error: Unexpected EOF after client_max_body_size.");
 			}
-			server.setClientMaxBodySize(std::strtoul(tokens[i].c_str(), NULL, 10));
+			server.setClientMaxBodySize(parseUnsignedLong(tokens[i]));
 			i++;
 			if (i >= tokens.size() || tokens[i] != ";") {
 				throw ConfigException("Error: Expected ';' after client_max_body_size.");
@@ -123,6 +123,9 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 		if (tokens[i] == "allow_methods" || tokens[i] == "allow_method") {
 			i++;
 			while (i < tokens.size() && tokens[i] != ";") {
+				if (tokens[i] != "GET" && tokens[i] != "POST" && tokens[i] != "DELETE") {
+					throw ConfigException("Error: Invalid or unsupported HTTP method '" + tokens[i] + "' in allow_methods.");
+				}
 				location.setAllowedMethod(tokens[i]);
 				i++;
 			}
@@ -168,7 +171,14 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 		}
 		else if (tokens[i] == "cgi_extension") {
 			i++;
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: 'cgi_extension' requires at least one argument.");
+			}
 			while (i < tokens.size() && tokens[i] != ";") {
+				if (tokens[i][0] != '.') {
+					throw ConfigException("Error: CGI extension must start with a dot (e.g., '.php'): " + tokens[i]);
+				}
+				location.setCgiExtension(tokens[i]);
 				i++;
 			}
 		}
@@ -191,7 +201,7 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 			if (i >= tokens.size()) {
 				throw ConfigException("Error: Unexpected EOF in client_max_body_size.");
 			}
-			location.setClientMaxBodySize(std::strtoul(tokens[i].c_str(), NULL, 10));
+			location.setClientMaxBodySize(parseUnsignedLong(tokens[i]));
 			i++;
 		}
 		else if (tokens[i] == "error_page") {
@@ -248,6 +258,20 @@ long Config::parseLong(const std::string& str) const {
 	}
 	if (*endptr != '\0') {
 		throw ConfigException("Error: Invalid number format: " + str);
+	}
+	return val;
+}
+
+unsigned long Config::parseUnsignedLong(const std::string& str) const {
+	char* endptr;
+	errno = 0;
+	unsigned long val = std::strtoul(str.c_str(), &endptr, 10);
+
+	if (errno == ERANGE) {
+		throw ConfigException("Error: Number out of range: " + str);
+	}
+	if (*endptr != '\0') {
+		throw ConfigException("Error: Invalid unsigned number format: " + str);
 	}
 	return val;
 }

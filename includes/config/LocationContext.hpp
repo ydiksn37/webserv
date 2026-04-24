@@ -24,6 +24,7 @@ class LocationContext {
 		std::string													_redirect_url;
 		bool																_upload_enable;
 		std::string													_upload_store;
+		std::vector<std::string>						_cgi_extensions;
 		std::map<std::string, std::string>	_cgi_info;
 		size_t															_client_max_body_size;
 		std::map<int, std::string>					_error_pages;
@@ -45,6 +46,7 @@ class LocationContext {
 		void setRedirect(int code, const std::string& url);
 		void setUploadEnable(bool enable);
 		void setUploadStore(const std::string& store);
+		void setCgiExtension(const std::string& ext);
 		void setCgiPath(const std::string& ext, const std::string& path);
 		void setClientMaxBodySize(size_t size);
 		void setErrorPage(int status_code, const std::string& path);
@@ -59,6 +61,7 @@ class LocationContext {
 		const std::string&												getRedirectUrl() const;
 		bool																			getUploadEnable() const;
 		const std::string&												getUploadStore() const;
+		const std::vector<std::string>&						getCgiExtensions() const;
 		const std::map<std::string, std::string>&	getCgiInfo() const;
 		size_t																		getClientMaxBodySize() const;
 		const std::map<int, std::string>&					getErrorPages() const;
