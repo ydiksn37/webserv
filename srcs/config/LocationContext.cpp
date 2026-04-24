@@ -9,7 +9,8 @@ LocationContext::LocationContext()
 		_redirect_code(0),
 		_redirect_url(""),
 		_upload_enable(false),
-		_upload_store("") {}
+		_upload_store(""),
+		_client_max_body_size(0) {}
 
 LocationContext::~LocationContext() {}
 
@@ -18,11 +19,15 @@ LocationContext::LocationContext(const LocationContext& other)
 		_allowed_methods(other._allowed_methods),
 		_root(other._root),
 		_alias(other._alias),
+		_index(other._index),
 		_autoindex(other._autoindex),
 		_redirect_code(other._redirect_code),
 		_redirect_url(other._redirect_url),
 		_upload_enable(other._upload_enable),
-		_upload_store(other._upload_store) {}
+		_upload_store(other._upload_store),
+		_cgi_info(other._cgi_info),
+		_client_max_body_size(other._client_max_body_size),
+		_error_pages(other._error_pages) {}
 
 LocationContext& LocationContext::operator=(const LocationContext& other) {
 	if (this != &other) {
@@ -30,11 +35,15 @@ LocationContext& LocationContext::operator=(const LocationContext& other) {
 		this->_allowed_methods = other._allowed_methods;
 		this->_root = other._root;
 		this->_alias = other._alias;
+		this->_index = other._index;
 		this->_autoindex = other._autoindex;
 		this->_redirect_code = other._redirect_code;
 		this->_redirect_url = other._redirect_url;
 		this->_upload_enable = other._upload_enable;
 		this->_upload_store = other._upload_store;
+		this->_cgi_info = other._cgi_info;
+		this->_client_max_body_size = other._client_max_body_size;
+		this->_error_pages = other._error_pages;
 	}
 	return *this;
 }
@@ -48,7 +57,8 @@ LocationContext::LocationContext(const std::string& path)
 		_redirect_code(0),
 		_redirect_url(""),
 		_upload_enable(false),
-		_upload_store("") {}
+		_upload_store(""),
+		_client_max_body_size(0) {}
 
 void LocationContext::setPath(const std::string& path) {
 	this->_path = path;
@@ -95,6 +105,14 @@ void LocationContext::setUploadStore(const std::string& store) {
 
 void LocationContext::setCgiPath(const std::string& ext, const std::string& path) {
 	this->_cgi_info[ext] = path;
+}
+
+void LocationContext::setClientMaxBodySize(size_t size) {
+	this->_client_max_body_size = size;
+}
+
+void LocationContext::setErrorPage(int status_code, const std::string& path) {
+	this->_error_pages[status_code] = path;
 }
 
 const std::string& LocationContext::getPath() const {
@@ -146,4 +164,12 @@ const std::string& LocationContext::getUploadStore() const {
 
 const std::map<std::string, std::string>& LocationContext::getCgiInfo() const {
 	return this->_cgi_info;
+}
+
+size_t LocationContext::getClientMaxBodySize() const {
+	return this->_client_max_body_size;
+}
+
+const std::map<int, std::string>& LocationContext::getErrorPages() const {
+	return this->_error_pages;
 }

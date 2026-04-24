@@ -115,6 +115,12 @@ bool Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 
 	LocationContext location(tokens[i]);
 
+	location.setClientMaxBodySize(server.getClientMaxBodySize());
+	const std::map<int, std::string>& parent_errors = server.getErrorPages();
+	for (std::map<int, std::string>::const_iterator it = parent_errors.begin(); it != parent_errors.end(); ++it) {
+		location.setErrorPage(it->first, it->second);
+	}
+
 	i++;
 	if (i >= tokens.size() || tokens[i] != "{") {
 		return false;
@@ -182,6 +188,26 @@ bool Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 			std::string path = tokens[i];
 			
 			location.setCgiPath(ext, path);
+			i++;
+		}
+		else if (tokens[i] == "client_max_body_size") {
+			i++;
+			if (i >= tokens.size()) return false;
+			location.setClientMaxBodySize(std::strtoul(tokens[i].c_str(), NULL, 10));
+			i++;
+		}
+		else if (tokens[i] == "error_page") {
+			i++;
+			std::vector<int> codes;
+			while (i < tokens.size() && tokens[i] != ";" && isdigit(tokens[i][0])) {
+				codes.push_back(std::atoi(tokens[i].c_str()));
+				i++;
+			}
+			if (i >= tokens.size() || tokens[i] == ";") return false;
+			std::string path = tokens[i];
+			for (size_t j = 0; j < codes.size(); ++j) {
+				location.setErrorPage(codes[j], path);
+			}
 			i++;
 		}
 		else {
