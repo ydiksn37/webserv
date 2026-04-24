@@ -3,16 +3,19 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
+#include <vector>
 
+// 小文字変換ヘルパー
 static std::string	toLower(std::string s)
 {
-	for (std::string::iterator	it = s.begin(); it != s.end(); ++it)
+	for (std::string::iterator it = s.begin(); it != s.end(); ++it)
 	{
 		*it = static_cast<char>(std::tolower(static_cast<unsigned char>(*it)));
 	}
 	return (s);
 }
 
+// 空白除去ヘルパー
 static std::string	trim(const std::string &s)
 {
 	size_t	first;
@@ -27,9 +30,11 @@ static std::string	trim(const std::string &s)
 	return (s.substr(first, (last - first + 1)));
 }
 
+// コンストラクタ：初期値（デフォルトサイズは1MBなど）
 HttpRequest::HttpRequest()
 	: _state(REQUEST_LINE), _method(""), _uri(""), _path(""), _query(""),
-	  _version(""), _headers(), _body(""), _buffer(""), _empty(""), _chunkSize(0)
+	  _version(""), _headers(), _body(""), _buffer(""), _empty(""), _chunkSize(0),
+	  _errorCode(0), _maxBodySize(1048576) // デフォルト 1MB
 {
 }
 
@@ -37,7 +42,8 @@ HttpRequest::HttpRequest(const HttpRequest &other)
 	: _state(other._state), _method(other._method), _uri(other._uri),
 	  _path(other._path), _query(other._query), _version(other._version),
 	  _headers(other._headers), _body(other._body), _buffer(other._buffer),
-	  _empty(other._empty), _chunkSize(other._chunkSize)
+	  _empty(other._empty), _chunkSize(other._chunkSize),
+	  _errorCode(other._errorCode), _maxBodySize(other._maxBodySize)
 {
 }
 
@@ -56,6 +62,8 @@ HttpRequest&	HttpRequest::operator=(const HttpRequest &other)
 		this->_buffer = other._buffer;
 		this->_empty = other._empty;
 		this->_chunkSize = other._chunkSize;
+		this->_errorCode = other._errorCode;
+		this->_maxBodySize = other._maxBodySize;
 	}
 	return (*this);
 }
@@ -64,6 +72,7 @@ HttpRequest::~HttpRequest()
 {
 }
 
+// 解析メインルーチン
 void	HttpRequest::parse(const std::string &raw_data)
 {
 	size_t	pos;
@@ -96,6 +105,14 @@ void	HttpRequest::parse(const std::string &raw_data)
 			if (this->_headers.count("content-length"))
 			{
 				size_t	len = static_cast<size_t>(std::strtol(this->_headers["content-length"].c_str(), NULL, 10));
+				
+				if (len > this->_maxBodySize)
+				{
+					this->_state = ERROR;
+					this->_errorCode = 413;
+					break ;
+				}
+
 				size_t	remaining = len - this->_body.length();
 				size_t	to_copy = std::min(remaining, this->_buffer.length());
 
@@ -130,6 +147,7 @@ void	HttpRequest::parse(const std::string &raw_data)
 				if (*endptr != '\0' && *endptr != ';')
 				{
 					this->_state = ERROR;
+					this->_errorCode = 400;
 					break ;
 				}
 
@@ -143,6 +161,13 @@ void	HttpRequest::parse(const std::string &raw_data)
 				}
 			}
 
+			if (this->_body.length() + this->_chunkSize > this->_maxBodySize)
+			{
+				this->_state = ERROR;
+				this->_errorCode = 413;
+				break ;
+			}
+
 			if (this->_buffer.length() >= this->_chunkSize + 2)
 			{
 				this->_body += this->_buffer.substr(0, this->_chunkSize);
@@ -150,6 +175,7 @@ void	HttpRequest::parse(const std::string &raw_data)
 				if (this->_buffer.substr(this->_chunkSize, 2) != "\r\n")
 				{
 					this->_state = ERROR;
+					this->_errorCode = 400;
 					break ;
 				}
 
@@ -181,10 +207,8 @@ void	HttpRequest::parse(const std::string &raw_data)
 	}
 }
 
-bool	HttpRequest::isCompleted() const
-{
-	return (this->_state == COMPLETE);
-}
+bool	HttpRequest::isCompleted() const { return (this->_state == COMPLETE); }
+bool	HttpRequest::isError() const { return (this->_state == ERROR); }
 
 void	HttpRequest::clear()
 {
@@ -198,36 +222,30 @@ void	HttpRequest::clear()
 	this->_body.clear();
 	this->_buffer.clear();
 	this->_chunkSize = 0;
+	this->_errorCode = 0;
 }
 
-const std::string&	HttpRequest::getMethod() const
-{
-	return (this->_method);
-}
+const std::string&	HttpRequest::getMethod() const { return (this->_method); }
+const std::string&	HttpRequest::getUri() const { return (this->_uri); }
+const std::string&	HttpRequest::getPath() const { return (this->_path); }
+const std::string&	HttpRequest::getQuery() const { return (this->_query); }
+const std::string&	HttpRequest::getVersion() const { return (this->_version); }
+const std::string&	HttpRequest::getBody() const { return (this->_body); }
+int					HttpRequest::getErrorCode() const { return (this->_errorCode); }
 
-const std::string&	HttpRequest::getUri() const
-{
-	return (this->_uri);
-}
+void	HttpRequest::setMaxBodySize(size_t max) { this->_maxBodySize = max; }
 
-const std::string&	HttpRequest::getPath() const
+// 指定されたメソッドが許可されているかチェック
+bool	HttpRequest::isMethodAllowed(const std::vector<std::string>& allowedMethods) const
 {
-	return (this->_path);
-}
-
-const std::string&	HttpRequest::getQuery() const
-{
-	return (this->_query);
-}
-
-const std::string&	HttpRequest::getVersion() const
-{
-	return (this->_version);
-}
-
-const std::string&	HttpRequest::getBody() const
-{
-	return (this->_body);
+	for (size_t i = 0; i < allowedMethods.size(); ++i)
+	{
+		if (this->_method == allowedMethods[i])
+		{
+			return (true);
+		}
+	}
+	return (false);
 }
 
 const std::string&	HttpRequest::getHeader(const std::string& key) const
@@ -242,20 +260,27 @@ const std::string&	HttpRequest::getHeader(const std::string& key) const
 	return (this->_empty);
 }
 
+const std::map<std::string, std::string>&	HttpRequest::getHeaders() const
+{
+	return (this->_headers);
+}
+
 void	HttpRequest::_parseRequestLine(std::string& line)
 {
-	if (line.empty())
-	{
-		return ;
-	}
-
+	if (line.empty()) return ;
 	std::stringstream	ss(line);
 	if (!(ss >> this->_method >> this->_uri >> this->_version))
 	{
 		this->_state = ERROR;
+		this->_errorCode = 400;
 		return ;
 	}
-
+	if (this->_uri.length() > 2048)
+	{
+		this->_state = ERROR;
+		this->_errorCode = 414;
+		return ;
+	}
 	size_t	query_pos = this->_uri.find('?');
 	if (query_pos != std::string::npos)
 	{
@@ -267,7 +292,7 @@ void	HttpRequest::_parseRequestLine(std::string& line)
 		this->_path = this->_uri;
 		this->_query = "";
 	}
-
+	this->_normalizePath();
 	this->_state = HEADERS;
 }
 
@@ -275,34 +300,45 @@ void	HttpRequest::_parseHeader(std::string& line)
 {
 	if (line.empty())
 	{
+		if (this->_version == "HTTP/1.1" && !this->_headers.count("host"))
+		{
+			this->_state = ERROR;
+			this->_errorCode = 400;
+			return ;
+		}
 		if (this->_headers.count("transfer-encoding") && this->_headers["transfer-encoding"] == "chunked")
-		{
 			this->_state = CHUNKED_BODY;
-		}
 		else if (this->_headers.count("content-length"))
-		{
 			this->_state = BODY;
-		}
 		else
-		{
 			this->_state = COMPLETE;
-		}
 		return ;
 	}
-
 	size_t	colon = line.find(':');
 	if (colon != std::string::npos)
 	{
 		std::string	key = ::toLower(::trim(line.substr(0, colon)));
 		std::string	value = ::trim(line.substr(colon + 1));
-
-		if (this->_headers.count(key))
-		{
-			this->_headers[key] += ", " + value;
-		}
-		else
-		{
-			this->_headers[key] = value;
-		}
+		if (this->_headers.count(key)) this->_headers[key] += ", " + value;
+		else this->_headers[key] = value;
 	}
+}
+
+void	HttpRequest::_normalizePath()
+{
+	std::vector<std::string>	segments;
+	std::stringstream			ss(this->_path);
+	std::string					segment;
+	std::string					res = "";
+
+	while (std::getline(ss, segment, '/'))
+	{
+		if (segment == "" || segment == ".") continue;
+		if (segment == "..") { if (!segments.empty()) segments.pop_back(); }
+		else segments.push_back(segment);
+	}
+	for (size_t i = 0; i < segments.size(); ++i) res += "/" + segments[i];
+	if (res == "") res = "/";
+	if (this->_path.length() > 1 && this->_path[this->_path.length() - 1] == '/') res += "/";
+	this->_path = res;
 }

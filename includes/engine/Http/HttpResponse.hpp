@@ -15,10 +15,12 @@ public:
 		void			setReasonPhrase(const std::string& phrase);
 		void			setHeader(const std::string& key, const std::string& value);
 		void			setBody(const std::string& body);
+		void			setBodyFromFile(const std::string& filepath);
 		void			setHttpVersion(const std::string& version);
+		void			setRedirect(int code, const std::string& location);
 
+		const std::map<std::string, std::string>&	getHeaders() const;
 		std::string		serialize() const;
-
 	private:
 		std::string							_version;
 		int									_statusCode;

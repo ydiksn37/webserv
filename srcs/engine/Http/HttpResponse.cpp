@@ -4,14 +4,19 @@
 #include <algorithm>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <fstream>
 
+// デフォルトコンストラクタ：初期値を設定し、必須ヘッダーを自動付与する
 HttpResponse::HttpResponse()
 	: _version("HTTP/1.1"), _statusCode(200), _reasonPhrase("OK")
 {
+	// インスタンス生成時の時刻をDateヘッダーに設定
 	this->setHeader("Date", this->_getCurrentDate());
+	// サーバー名をServerヘッダーに設定
 	this->setHeader("Server", "Webserv/1.0");
 }
 
+// コピーコンストラクタ
 HttpResponse::HttpResponse(const HttpResponse& other)
 	: _version(other._version), _statusCode(other._statusCode),
 	  _reasonPhrase(other._reasonPhrase), _headers(other._headers),
@@ -19,6 +24,7 @@ HttpResponse::HttpResponse(const HttpResponse& other)
 {
 }
 
+// 代入演算子
 HttpResponse&	HttpResponse::operator=(const HttpResponse& other)
 {
 	if (this != &other)
@@ -32,10 +38,12 @@ HttpResponse&	HttpResponse::operator=(const HttpResponse& other)
 	return (*this);
 }
 
+// デストラクタ
 HttpResponse::~HttpResponse()
 {
 }
 
+// HTTPステータスコードとメッセージの対応表
 std::map<int, std::string>	HttpResponse::_initStatusMessages()
 {
 	std::map<int, std::string>	m;
@@ -86,10 +94,12 @@ std::map<int, std::string>	HttpResponse::_initStatusMessages()
 	return (m);
 }
 
+// ステータスコード設定
 void	HttpResponse::setStatusCode(int code)
 {
 	this->_statusCode = code;
 	this->_reasonPhrase = this->_getStatusMessage(code);
+	// エラー時はデフォルトエラーページを生成
 	if (code >= 400)
 	{
 		this->setBody(this->_generateDefaultErrorPage(code));
@@ -97,16 +107,23 @@ void	HttpResponse::setStatusCode(int code)
 	}
 }
 
+// リーズンフレーズ設定
 void	HttpResponse::setReasonPhrase(const std::string& phrase)
 {
 	this->_reasonPhrase = phrase;
 }
 
+// ヘッダー設定（インジェクション対策済み）
 void	HttpResponse::setHeader(const std::string& key, const std::string& value)
 {
+	if (value.find("\r\n") != std::string::npos || key.find("\r\n") != std::string::npos)
+	{
+		return ;
+	}
 	this->_headers[this->_normalizeHeaderKey(key)] = value;
 }
 
+// ボディ設定
 void	HttpResponse::setBody(const std::string& body)
 {
 	std::stringstream	ss;
@@ -116,11 +133,46 @@ void	HttpResponse::setBody(const std::string& body)
 	this->setHeader("Content-Length", ss.str());
 }
 
+// ファイルからボディを読み込む
+void	HttpResponse::setBodyFromFile(const std::string& filepath)
+{
+	std::ifstream		file(filepath.c_str(), std::ios::binary);
+	std::stringstream	buffer;
+
+	// ファイルが開けなかった場合は404エラーを設定して終了
+	if (!file.is_open())
+	{
+		this->setStatusCode(404);
+		return ;
+	}
+	// ファイル内容を一括読み込み
+	buffer << file.rdbuf();
+	this->setBody(buffer.str());
+	// 拡張子からContent-Typeを自動設定
+	this->setHeader("Content-Type", this->getContentType(filepath));
+}
+
+// HTTPバージョン設定
 void	HttpResponse::setHttpVersion(const std::string& version)
 {
 	this->_version = version;
 }
 
+// リダイレクト設定
+void	HttpResponse::setRedirect(int code, const std::string& location)
+{
+	this->setStatusCode(code);
+	this->setHeader("Location", location);
+	this->setBody("");
+}
+
+// ヘッダーマップの取得
+const std::map<std::string, std::string>&	HttpResponse::getHeaders() const
+{
+	return (this->_headers);
+}
+
+// シリアライズ
 std::string	HttpResponse::serialize() const
 {
 	std::stringstream	ss;
@@ -135,6 +187,7 @@ std::string	HttpResponse::serialize() const
 	return (ss.str());
 }
 
+// ステータスメッセージ取得
 std::string	HttpResponse::_getStatusMessage(int code) const
 {
 	static std::map<int, std::string>			m = _initStatusMessages();
@@ -148,6 +201,7 @@ std::string	HttpResponse::_getStatusMessage(int code) const
 	return ("Unknown");
 }
 
+// 現在時刻取得
 std::string	HttpResponse::_getCurrentDate() const
 {
 	time_t		now;
@@ -160,6 +214,7 @@ std::string	HttpResponse::_getCurrentDate() const
 	return (std::string(buf));
 }
 
+// ヘッダー名正規化
 std::string	HttpResponse::_normalizeHeaderKey(const std::string& key) const
 {
 	std::string	normalized;
@@ -186,6 +241,7 @@ std::string	HttpResponse::_normalizeHeaderKey(const std::string& key) const
 	return (normalized);
 }
 
+// デフォルトエラーページ生成
 std::string	HttpResponse::_generateDefaultErrorPage(int code) const
 {
 	std::stringstream	ss;
@@ -202,6 +258,7 @@ std::string	HttpResponse::_generateDefaultErrorPage(int code) const
 	return (ss.str());
 }
 
+// ディレクトリリスティング生成
 std::string	HttpResponse::generateDirectoryListing(const std::string& path, const std::string& uri)
 {
 	std::stringstream	ss;
@@ -237,6 +294,7 @@ std::string	HttpResponse::generateDirectoryListing(const std::string& path, cons
 	return (ss.str());
 }
 
+// MIMEタイプ取得
 std::string	HttpResponse::getContentType(const std::string& path)
 {
 	size_t	dot_pos;
