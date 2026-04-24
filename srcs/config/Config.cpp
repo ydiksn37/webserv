@@ -36,9 +36,9 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 			if (colon_pos != std::string::npos) {
 				std::string ip = listen_val.substr(0, colon_pos);
 				std::string port_str = listen_val.substr(colon_pos + 1);
-				server.setPort(std::atoi(port_str.c_str()));
+				server.setPort(static_cast<int>(parseLong(port_str)));
 			} else {
-				server.setPort(std::atoi(listen_val.c_str()));
+				server.setPort(static_cast<int>(parseLong(listen_val)));
 			}
 			i++;
 			if (i >= tokens.size() || tokens[i] != ";") {
@@ -73,7 +73,7 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 			i++;
 			std::vector<int> codes;
 			while (i < tokens.size() && tokens[i] != ";" && isdigit(tokens[i][0])) {
-				codes.push_back(std::atoi(tokens[i].c_str()));
+				codes.push_back(static_cast<int>(parseLong(tokens[i])));
 				i++;
 			}
 			if (i >= tokens.size() || tokens[i] == ";") {
@@ -151,7 +151,7 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 		}
 		else if (tokens[i] == "return") {
 			i++;
-			int code = std::atoi(tokens[i].c_str());
+			int code = static_cast<int>(parseLong(tokens[i]));
 			i++;
 			location.setRedirect(code, tokens[i]);
 			i++;
@@ -198,7 +198,7 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 			i++;
 			std::vector<int> codes;
 			while (i < tokens.size() && tokens[i] != ";" && isdigit(tokens[i][0])) {
-				codes.push_back(std::atoi(tokens[i].c_str()));
+				codes.push_back(static_cast<int>(parseLong(tokens[i])));
 				i++;
 			}
 			if (i >= tokens.size() || tokens[i] == ";") {
@@ -238,6 +238,20 @@ void Config::validateConfiguration() const {
 	}
 }
 
+long Config::parseLong(const std::string& str) const {
+	char* endptr;
+	errno = 0;
+	long val = std::strtol(str.c_str(), &endptr, 10);
+
+	if (errno == ERANGE) {
+		throw ConfigException("Error: Number out of range: " + str);
+	}
+	if (*endptr != '\0') {
+		throw ConfigException("Error: Invalid number format: " + str);
+	}
+	return val;
+}
+
 std::vector<std::string> Config::tokenize(const std::string& content) {
 	std::vector<std::string> tokens;
 	std::string current_token = "";
@@ -273,17 +287,19 @@ std::vector<std::string> Config::tokenize(const std::string& content) {
 	return tokens;
 }
 
-bool Config::loadFile(const std::string& filename) {
+void Config::loadFile(const std::string& filename) {
 	std::ifstream file(filename.c_str());
 	std::stringstream buffer;
 	std::vector<std::string> tokens;
 
 	if (!file.is_open()) {
-		std::cerr << "Error: Cannot open file " << filename << std::endl;
-		return false;
+		throw ConfigException("Error: Cannot open configuration file: " + filename);
 	}
 	buffer << file.rdbuf();
 	tokens = tokenize(buffer.str());
+	if (tokens.empty()) {
+		throw ConfigException("Error: Configuration file is empty.");
+	}
 	for (size_t i = 0; i < tokens.size(); ++i) {
 		if (tokens[i] == "server") {
 			parseServerBlock(tokens, i);
@@ -292,7 +308,6 @@ bool Config::loadFile(const std::string& filename) {
 		}
 	}
 	validateConfiguration();
-	return true;
 }
 
 const ServerContext* Config::getServer(int port, const std::string& host_name) const {

@@ -8,6 +8,8 @@
 # include <sstream>
 # include <cstdlib>
 # include <stdexcept>
+# include <cctype>
+# include <cerrno>
 # include "ServerContext.hpp"
 
 class Config {
@@ -16,6 +18,7 @@ class Config {
 		void parseServerBlock(const std::vector<std::string>& tokens, size_t& i);
 		void parseLocationBlock(const std::vector<std::string>& tokens, size_t& i, ServerContext& server);
 		void validateConfiguration() const;
+		long parseLong(const std::string& str) const;
 
 	public:
 		Config();
@@ -25,7 +28,7 @@ class Config {
 
 		const std::vector<ServerContext>& getServers() const;
 		std::vector<std::string> tokenize(const std::string& content);
-		bool loadFile(const std::string& filename);
+		void loadFile(const std::string& filename);
 		const ServerContext* getServer(int port, const std::string& host_name) const;
 		const LocationContext* matchLocation(const ServerContext* server, const std::string& uri) const;
 
