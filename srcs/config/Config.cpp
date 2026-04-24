@@ -17,20 +17,19 @@ const std::vector<ServerContext>& Config::getServers() const {
 	return this->_servers;
 }
 
-bool Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i) {
+void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i) {
 	ServerContext server;
 
 	i++;
 	if (i >= tokens.size() || tokens[i] != "{") {
-		std::cerr << "Error: Expected '{' after server" << std::endl;
-		return false;
+		throw ConfigException("Error: Expected '{' after server directive.");
 	}
 	i++;
 	while (i < tokens.size() && tokens[i] != "}") {
 		if (tokens[i] == "listen") {
 			i++;
 			if (i >= tokens.size()) {
-				return false;
+				throw ConfigException("Error: Unexpected EOF after listen.");
 			}
 			std::string listen_val = tokens[i];
 			size_t colon_pos = listen_val.find(':');
@@ -43,8 +42,7 @@ bool Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 			}
 			i++;
 			if (i >= tokens.size() || tokens[i] != ";") {
-				std::cerr << "Error: Expected ';' after listen port" << std::endl;
-				return false;
+				throw ConfigException("Error: Expected ';' after listen port.");
 			}
 		}
 		else if (tokens[i] == "server_name") {
@@ -54,24 +52,21 @@ bool Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 				i++;
 			}
 			if (i >= tokens.size() || tokens[i] != ";") {
-				return false;
+				throw ConfigException("Error: Expected ';' after server_name.");
 			}
 		}
 		else if (tokens[i] == "location") {
-			if (!parseLocationBlock(tokens, i, server)) {
-				return false;
-			}
+			parseLocationBlock(tokens, i, server);
 		}
 		else if (tokens[i] == "client_max_body_size") {
 			i++;
 			if (i >= tokens.size()) {
-				return false;
+				throw ConfigException("Error: Unexpected EOF after client_max_body_size.");
 			}
 			server.setClientMaxBodySize(std::strtoul(tokens[i].c_str(), NULL, 10));
 			i++;
 			if (i >= tokens.size() || tokens[i] != ";") {
-				std::cerr << "Error: Expected ';' after client_max_body_size" << std::endl;
-				return false;
+				throw ConfigException("Error: Expected ';' after client_max_body_size.");
 			}
 		}
 		else if (tokens[i] == "error_page") {
@@ -82,7 +77,7 @@ bool Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 				i++;
 			}
 			if (i >= tokens.size() || tokens[i] == ";") {
-				return false;
+				throw ConfigException("Error: Expected status code for error_page.");
 			}
 			std::string path = tokens[i];
 			for (size_t j = 0; j < codes.size(); ++j) {
@@ -90,27 +85,25 @@ bool Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 			}
 			i++;
 			if (i >= tokens.size() || tokens[i] != ";") {
-				return false;
+				throw ConfigException("Error: Expected ';' after error_page.");
 			}
 		}
 		else {
-			std::cerr << "Error: Unknown directive '" << tokens[i] << "'" << std::endl;
-			return false;
+			throw ConfigException("Error: Unknown server directive '" + tokens[i] + "'");
 		}
 		i++;
 	}
 	if (i < tokens.size() && tokens[i] == "}") {
 		this->_servers.push_back(server);
-		return true;
+		return;
 	}
-	std::cerr << "Error: Server block not closed with '}'" << std::endl;
-	return false;
+	throw ConfigException("Error: Server block not closed with '}'.");
 }
 
-bool Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& i, ServerContext& server) {
+void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& i, ServerContext& server) {
 	i++;
 	if (i >= tokens.size()) {
-		return false;
+		throw ConfigException("Error: Unexpected EOF in location block.");
 	}
 
 	LocationContext location(tokens[i]);
@@ -123,7 +116,7 @@ bool Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 
 	i++;
 	if (i >= tokens.size() || tokens[i] != "{") {
-		return false;
+		throw ConfigException("Error: Expected '{' after location path.");
 	}
 	i++;
 	while (i < tokens.size() && tokens[i] != "}") {
@@ -181,18 +174,23 @@ bool Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 		}
 		else if (tokens[i] == "cgi_path") {
 			i++;
-			if (i >= tokens.size()) return false;
+			if (i >= tokens.size()) {
+				throw ConfigException("Error: Unexpected EOF in cgi_path.");
+			}
 			std::string ext = tokens[i];
 			i++;
-			if (i >= tokens.size()) return false;
+			if (i >= tokens.size()) {
+				throw ConfigException("Error: Unexpected EOF in cgi_path.");
+			}
 			std::string path = tokens[i];
-			
 			location.setCgiPath(ext, path);
 			i++;
 		}
 		else if (tokens[i] == "client_max_body_size") {
 			i++;
-			if (i >= tokens.size()) return false;
+			if (i >= tokens.size()) {
+				throw ConfigException("Error: Unexpected EOF in client_max_body_size.");
+			}
 			location.setClientMaxBodySize(std::strtoul(tokens[i].c_str(), NULL, 10));
 			i++;
 		}
@@ -203,7 +201,9 @@ bool Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 				codes.push_back(std::atoi(tokens[i].c_str()));
 				i++;
 			}
-			if (i >= tokens.size() || tokens[i] == ";") return false;
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: Expected status code for error_page.");
+			}
 			std::string path = tokens[i];
 			for (size_t j = 0; j < codes.size(); ++j) {
 				location.setErrorPage(codes[j], path);
@@ -218,13 +218,24 @@ bool Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 		}
 		if (i < tokens.size() && tokens[i] == ";") {
 			i++;
+		} else if (i < tokens.size() && tokens[i] != "}") {
+			throw ConfigException("Error: Expected ';' after location directive.");
 		}
 	}
 	if (i < tokens.size() && tokens[i] == "}") {
 		server.setLocation(location);
-		return true;
+		return;
 	}
-	return false;
+	throw ConfigException("Error: Location block not closed with '}'.");
+}
+
+void Config::validateConfiguration() const {
+	if (this->_servers.empty()) {
+		throw ConfigException("Error: No server blocks found in configuration.");
+	}
+	for (size_t i = 0; i < this->_servers.size(); ++i) {
+		this->_servers[i].validate();
+	}
 }
 
 std::vector<std::string> Config::tokenize(const std::string& content) {
@@ -275,14 +286,12 @@ bool Config::loadFile(const std::string& filename) {
 	tokens = tokenize(buffer.str());
 	for (size_t i = 0; i < tokens.size(); ++i) {
 		if (tokens[i] == "server") {
-			if (!parseServerBlock(tokens, i)) {
-				return false;
-			}
+			parseServerBlock(tokens, i);
 		} else {
-			std::cerr << "Error: Expected 'server' block, found '" << tokens[i] << "'" << std::endl;
-			return false;
+			throw ConfigException("Error: Expected 'server' block, found '" + tokens[i] + "'");
 		}
 	}
+	validateConfiguration();
 	return true;
 }
 
@@ -303,7 +312,9 @@ const ServerContext* Config::getServer(int port, const std::string& host_name) c
 }
 
 const LocationContext* Config::matchLocation(const ServerContext* server, const std::string& uri) const {
-	if (server == NULL) return NULL;
+	if (server == NULL) {
+		return NULL;
+	}
 
 	const LocationContext* best_match = NULL;
 	size_t max_match_length = 0;

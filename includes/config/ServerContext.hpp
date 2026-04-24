@@ -34,6 +34,8 @@ class ServerContext {
 		size_t getClientMaxBodySize() const;
 		const std::map<int, std::string>& getErrorPages() const;
 		const std::vector<LocationContext>& getLocations() const;
+
+		void validate() const;
 };
 
 #endif

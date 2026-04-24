@@ -7,13 +7,15 @@
 # include <fstream>
 # include <sstream>
 # include <cstdlib>
+# include <stdexcept>
 # include "ServerContext.hpp"
 
 class Config {
 	private:
 		std::vector<ServerContext> _servers;
-		bool parseServerBlock(const std::vector<std::string>& tokens, size_t& i);
-		bool parseLocationBlock(const std::vector<std::string>& tokens, size_t& i, ServerContext& server);
+		void parseServerBlock(const std::vector<std::string>& tokens, size_t& i);
+		void parseLocationBlock(const std::vector<std::string>& tokens, size_t& i, ServerContext& server);
+		void validateConfiguration() const;
 
 	public:
 		Config();
@@ -26,6 +28,11 @@ class Config {
 		bool loadFile(const std::string& filename);
 		const ServerContext* getServer(int port, const std::string& host_name) const;
 		const LocationContext* matchLocation(const ServerContext* server, const std::string& uri) const;
+
+		class ConfigException : public std::runtime_error {
+			public:
+				ConfigException(const std::string& msg) : std::runtime_error(msg) {}
+		};
 };
 
 #endif

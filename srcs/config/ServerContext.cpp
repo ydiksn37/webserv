@@ -70,3 +70,15 @@ const std::map<int, std::string>& ServerContext::getErrorPages() const {
 const std::vector<LocationContext>& ServerContext::getLocations() const {
 	return this->_locations;
 }
+
+void ServerContext::validate() const {
+	if (this->_port <= 0 || this->_port > 65535) {
+		throw std::runtime_error("Invalid or missing 'listen' port in server block.");
+	}
+	if (this->_locations.empty()) {
+		throw std::runtime_error("Server must contain at least one 'location' block.");
+	}
+	for (size_t i = 0; i < this->_locations.size(); ++i) {
+		this->_locations[i].validate();
+	}
+}

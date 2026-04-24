@@ -62,6 +62,8 @@ class LocationContext {
 		const std::map<std::string, std::string>& getCgiInfo() const;
 		size_t getClientMaxBodySize() const;
 		const std::map<int, std::string>& getErrorPages() const;
+
+		void validate() const;
 };
 
 #endif
