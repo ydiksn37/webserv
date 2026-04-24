@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <vector>
 
-// 小文字変換ヘルパー
 static std::string	toLower(std::string s)
 {
 	for (std::string::iterator it = s.begin(); it != s.end(); ++it)
@@ -15,7 +14,6 @@ static std::string	toLower(std::string s)
 	return (s);
 }
 
-// 空白除去ヘルパー
 static std::string	trim(const std::string &s)
 {
 	size_t	first;
@@ -30,11 +28,107 @@ static std::string	trim(const std::string &s)
 	return (s.substr(first, (last - first + 1)));
 }
 
-// コンストラクタ：初期値（デフォルトサイズは1MBなど）
+static bool	isTokenChar(char c)
+{
+	if (std::isalnum(static_cast<unsigned char>(c)))
+	{
+		return (true);
+	}
+	return (c == '!' || c == '#' || c == '$' || c == '%' || c == '&'
+		|| c == '\'' || c == '*' || c == '+' || c == '-' || c == '.'
+		|| c == '^' || c == '_' || c == '`' || c == '|' || c == '~');
+}
+
+static bool	isValidMethod(const std::string &method)
+{
+	if (method.empty())
+	{
+		return (false);
+	}
+	for (size_t i = 0; i < method.length(); ++i)
+	{
+		if (!std::isupper(static_cast<unsigned char>(method[i])))
+		{
+			return (false);
+		}
+	}
+	return (true);
+}
+
+static bool	isSupportedTransferEncoding(const std::string &value)
+{
+	std::string	normalized;
+
+	normalized.reserve(value.length());
+	for (size_t i = 0; i < value.length(); ++i)
+	{
+		if (!std::isspace(static_cast<unsigned char>(value[i])))
+		{
+			normalized += static_cast<char>(
+				std::tolower(static_cast<unsigned char>(value[i])));
+		}
+	}
+	return (normalized == "chunked");
+}
+
+static bool	parseDecimalSize(const std::string &value, size_t &result)
+{
+	if (value.empty())
+	{
+		return (false);
+	}
+	result = 0;
+	for (size_t i = 0; i < value.length(); ++i)
+	{
+		if (!std::isdigit(static_cast<unsigned char>(value[i])))
+		{
+			return (false);
+		}
+		result = result * 10 + static_cast<size_t>(value[i] - '0');
+	}
+	return (true);
+}
+
+static bool	parseChunkSize(const std::string &line, size_t &result)
+{
+	size_t	semicolon;
+	std::string	sizePart;
+
+	semicolon = line.find(';');
+	sizePart = trim(line.substr(0, semicolon));
+	if (sizePart.empty())
+	{
+		return (false);
+	}
+	result = 0;
+	for (size_t i = 0; i < sizePart.length(); ++i)
+	{
+		char	c;
+
+		c = sizePart[i];
+		if (!std::isxdigit(static_cast<unsigned char>(c)))
+		{
+			return (false);
+		}
+		result *= 16;
+		if (std::isdigit(static_cast<unsigned char>(c)))
+		{
+			result += static_cast<size_t>(c - '0');
+		}
+		else
+		{
+			result += static_cast<size_t>(
+				std::tolower(static_cast<unsigned char>(c)) - 'a' + 10);
+		}
+	}
+	return (true);
+}
+
 HttpRequest::HttpRequest()
 	: _state(REQUEST_LINE), _method(""), _uri(""), _path(""), _query(""),
 	  _version(""), _headers(), _body(""), _buffer(""), _empty(""), _chunkSize(0),
-	  _errorCode(0), _maxBodySize(1048576) // デフォルト 1MB
+	  _contentLength(0), _hasContentLength(false), _errorCode(0),
+	  _maxBodySize(1048576)
 {
 }
 
@@ -43,6 +137,8 @@ HttpRequest::HttpRequest(const HttpRequest &other)
 	  _path(other._path), _query(other._query), _version(other._version),
 	  _headers(other._headers), _body(other._body), _buffer(other._buffer),
 	  _empty(other._empty), _chunkSize(other._chunkSize),
+	  _contentLength(other._contentLength),
+	  _hasContentLength(other._hasContentLength),
 	  _errorCode(other._errorCode), _maxBodySize(other._maxBodySize)
 {
 }
@@ -62,6 +158,8 @@ HttpRequest&	HttpRequest::operator=(const HttpRequest &other)
 		this->_buffer = other._buffer;
 		this->_empty = other._empty;
 		this->_chunkSize = other._chunkSize;
+		this->_contentLength = other._contentLength;
+		this->_hasContentLength = other._hasContentLength;
 		this->_errorCode = other._errorCode;
 		this->_maxBodySize = other._maxBodySize;
 	}
@@ -72,11 +170,20 @@ HttpRequest::~HttpRequest()
 {
 }
 
-// 解析メインルーチン
+void	HttpRequest::_setError(int errorCode)
+{
+	this->_state = ERROR;
+	this->_errorCode = errorCode;
+}
+
 void	HttpRequest::parse(const std::string &raw_data)
 {
 	size_t	pos;
 
+	if (this->_state == COMPLETE || this->_state == ERROR)
+	{
+		return ;
+	}
 	this->_buffer += raw_data;
 	while (this->_state != COMPLETE && this->_state != ERROR)
 	{
@@ -93,6 +200,10 @@ void	HttpRequest::parse(const std::string &raw_data)
 
 			if (this->_state == REQUEST_LINE)
 			{
+				if (line.empty())
+				{
+					continue ;
+				}
 				this->_parseRequestLine(line);
 			}
 			else
@@ -102,29 +213,19 @@ void	HttpRequest::parse(const std::string &raw_data)
 		}
 		else if (this->_state == BODY)
 		{
-			if (this->_headers.count("content-length"))
+			size_t	remaining;
+			size_t	toCopy;
+
+			if (this->_contentLength > this->_maxBodySize)
 			{
-				size_t	len = static_cast<size_t>(std::strtol(this->_headers["content-length"].c_str(), NULL, 10));
-				
-				if (len > this->_maxBodySize)
-				{
-					this->_state = ERROR;
-					this->_errorCode = 413;
-					break ;
-				}
-
-				size_t	remaining = len - this->_body.length();
-				size_t	to_copy = std::min(remaining, this->_buffer.length());
-
-				this->_body += this->_buffer.substr(0, to_copy);
-				this->_buffer.erase(0, to_copy);
-
-				if (this->_body.length() >= len)
-				{
-					this->_state = COMPLETE;
-				}
+				this->_setError(413);
+				break ;
 			}
-			else
+			remaining = this->_contentLength - this->_body.length();
+			toCopy = std::min(remaining, this->_buffer.length());
+			this->_body += this->_buffer.substr(0, toCopy);
+			this->_buffer.erase(0, toCopy);
+			if (this->_body.length() >= this->_contentLength)
 			{
 				this->_state = COMPLETE;
 			}
@@ -140,18 +241,15 @@ void	HttpRequest::parse(const std::string &raw_data)
 					break ;
 				}
 				
-				std::string	size_line = this->_buffer.substr(0, pos);
-				char		*endptr;
-				long		size = std::strtol(size_line.c_str(), &endptr, 16);
+				std::string	sizeLine = this->_buffer.substr(0, pos);
+				size_t		chunkSize;
 
-				if (*endptr != '\0' && *endptr != ';')
+				if (!parseChunkSize(sizeLine, chunkSize))
 				{
-					this->_state = ERROR;
-					this->_errorCode = 400;
+					this->_setError(400);
 					break ;
 				}
-
-				this->_chunkSize = static_cast<size_t>(size);
+				this->_chunkSize = chunkSize;
 				this->_buffer.erase(0, pos + 2);
 
 				if (this->_chunkSize == 0)
@@ -163,8 +261,7 @@ void	HttpRequest::parse(const std::string &raw_data)
 
 			if (this->_body.length() + this->_chunkSize > this->_maxBodySize)
 			{
-				this->_state = ERROR;
-				this->_errorCode = 413;
+				this->_setError(413);
 				break ;
 			}
 
@@ -174,8 +271,7 @@ void	HttpRequest::parse(const std::string &raw_data)
 
 				if (this->_buffer.substr(this->_chunkSize, 2) != "\r\n")
 				{
-					this->_state = ERROR;
-					this->_errorCode = 400;
+					this->_setError(400);
 					break ;
 				}
 
@@ -222,6 +318,8 @@ void	HttpRequest::clear()
 	this->_body.clear();
 	this->_buffer.clear();
 	this->_chunkSize = 0;
+	this->_contentLength = 0;
+	this->_hasContentLength = false;
 	this->_errorCode = 0;
 }
 
@@ -235,7 +333,6 @@ int					HttpRequest::getErrorCode() const { return (this->_errorCode); }
 
 void	HttpRequest::setMaxBodySize(size_t max) { this->_maxBodySize = max; }
 
-// 指定されたメソッドが許可されているかチェック
 bool	HttpRequest::isMethodAllowed(const std::vector<std::string>& allowedMethods) const
 {
 	for (size_t i = 0; i < allowedMethods.size(); ++i)
@@ -267,18 +364,37 @@ const std::map<std::string, std::string>&	HttpRequest::getHeaders() const
 
 void	HttpRequest::_parseRequestLine(std::string& line)
 {
-	if (line.empty()) return ;
 	std::stringstream	ss(line);
+	std::string			extra;
+
 	if (!(ss >> this->_method >> this->_uri >> this->_version))
 	{
-		this->_state = ERROR;
-		this->_errorCode = 400;
+		this->_setError(400);
+		return ;
+	}
+	if (ss >> extra)
+	{
+		this->_setError(400);
+		return ;
+	}
+	if (!isValidMethod(this->_method))
+	{
+		this->_setError(400);
+		return ;
+	}
+	if (this->_version != "HTTP/1.1" && this->_version != "HTTP/1.0")
+	{
+		this->_setError(505);
+		return ;
+	}
+	if (this->_uri.empty() || this->_uri[0] != '/')
+	{
+		this->_setError(400);
 		return ;
 	}
 	if (this->_uri.length() > 2048)
 	{
-		this->_state = ERROR;
-		this->_errorCode = 414;
+		this->_setError(414);
 		return ;
 	}
 	size_t	query_pos = this->_uri.find('?');
@@ -298,29 +414,83 @@ void	HttpRequest::_parseRequestLine(std::string& line)
 
 void	HttpRequest::_parseHeader(std::string& line)
 {
+	size_t		colon;
+	std::string	key;
+	std::string	value;
+
 	if (line.empty())
 	{
 		if (this->_version == "HTTP/1.1" && !this->_headers.count("host"))
 		{
-			this->_state = ERROR;
-			this->_errorCode = 400;
+			this->_setError(400);
 			return ;
 		}
-		if (this->_headers.count("transfer-encoding") && this->_headers["transfer-encoding"] == "chunked")
+		if (this->_headers.count("transfer-encoding"))
+		{
+			if (this->_hasContentLength)
+			{
+				this->_setError(400);
+				return ;
+			}
+			if (!isSupportedTransferEncoding(this->_headers["transfer-encoding"]))
+			{
+				this->_setError(501);
+				return ;
+			}
 			this->_state = CHUNKED_BODY;
+		}
 		else if (this->_headers.count("content-length"))
+		{
 			this->_state = BODY;
+		}
 		else
+		{
 			this->_state = COMPLETE;
+		}
 		return ;
 	}
-	size_t	colon = line.find(':');
-	if (colon != std::string::npos)
+	colon = line.find(':');
+	if (colon == std::string::npos || colon == 0)
 	{
-		std::string	key = ::toLower(::trim(line.substr(0, colon)));
-		std::string	value = ::trim(line.substr(colon + 1));
-		if (this->_headers.count(key)) this->_headers[key] += ", " + value;
-		else this->_headers[key] = value;
+		this->_setError(400);
+		return ;
+	}
+	key = ::toLower(::trim(line.substr(0, colon)));
+	value = ::trim(line.substr(colon + 1));
+	for (size_t i = 0; i < key.length(); ++i)
+	{
+		if (!isTokenChar(key[i]))
+		{
+			this->_setError(400);
+			return ;
+		}
+	}
+	if (key == "content-length")
+	{
+		size_t	contentLength;
+
+		if (!parseDecimalSize(value, contentLength))
+		{
+			this->_setError(400);
+			return ;
+		}
+		if (this->_hasContentLength && this->_contentLength != contentLength)
+		{
+			this->_setError(400);
+			return ;
+		}
+		this->_hasContentLength = true;
+		this->_contentLength = contentLength;
+		this->_headers[key] = value;
+		return ;
+	}
+	if (this->_headers.count(key))
+	{
+		this->_headers[key] += ", " + value;
+	}
+	else
+	{
+		this->_headers[key] = value;
 	}
 }
 

@@ -6,11 +6,14 @@
 
 class HttpResponse
 {
-public:
-	HttpResponse();
-	HttpResponse(const HttpResponse& other);
-	HttpResponse&	operator=(const HttpResponse& other);
-	~HttpResponse();
+	public:
+		// Constructors & Destructor & Overloaded Operator
+		HttpResponse();
+		HttpResponse(const HttpResponse& other);
+		HttpResponse&	operator=(const HttpResponse& other);
+		~HttpResponse();
+
+		// Setters
 		void			setStatusCode(int code);
 		void			setReasonPhrase(const std::string& phrase);
 		void			setHeader(const std::string& key, const std::string& value);
@@ -19,8 +22,10 @@ public:
 		void			setHttpVersion(const std::string& version);
 		void			setRedirect(int code, const std::string& location);
 
+		// Getter
 		const std::map<std::string, std::string>&	getHeaders() const;
-		std::string		serialize() const;
+		std::string									serialize() const;
+
 	private:
 		std::string							_version;
 		int									_statusCode;

@@ -1,22 +1,47 @@
 #include "engine/Http/HttpResponse.hpp"
 #include <sstream>
 #include <ctime>
-#include <algorithm>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <fstream>
 
-// デフォルトコンストラクタ：初期値を設定し、必須ヘッダーを自動付与する
+static std::string	htmlEscape(const std::string &value)
+{
+	std::string	escaped;
+
+	for (size_t i = 0; i < value.length(); ++i)
+	{
+		if (value[i] == '&')
+		{
+			escaped += "&amp;";
+		}
+		else if (value[i] == '<')
+		{
+			escaped += "&lt;";
+		}
+		else if (value[i] == '>')
+		{
+			escaped += "&gt;";
+		}
+		else if (value[i] == '"')
+		{
+			escaped += "&quot;";
+		}
+		else
+		{
+			escaped += value[i];
+		}
+	}
+	return (escaped);
+}
+
 HttpResponse::HttpResponse()
 	: _version("HTTP/1.1"), _statusCode(200), _reasonPhrase("OK")
 {
-	// インスタンス生成時の時刻をDateヘッダーに設定
 	this->setHeader("Date", this->_getCurrentDate());
-	// サーバー名をServerヘッダーに設定
 	this->setHeader("Server", "Webserv/1.0");
 }
 
-// コピーコンストラクタ
 HttpResponse::HttpResponse(const HttpResponse& other)
 	: _version(other._version), _statusCode(other._statusCode),
 	  _reasonPhrase(other._reasonPhrase), _headers(other._headers),
@@ -24,7 +49,6 @@ HttpResponse::HttpResponse(const HttpResponse& other)
 {
 }
 
-// 代入演算子
 HttpResponse&	HttpResponse::operator=(const HttpResponse& other)
 {
 	if (this != &other)
@@ -38,12 +62,10 @@ HttpResponse&	HttpResponse::operator=(const HttpResponse& other)
 	return (*this);
 }
 
-// デストラクタ
 HttpResponse::~HttpResponse()
 {
 }
 
-// HTTPステータスコードとメッセージの対応表
 std::map<int, std::string>	HttpResponse::_initStatusMessages()
 {
 	std::map<int, std::string>	m;
@@ -94,12 +116,10 @@ std::map<int, std::string>	HttpResponse::_initStatusMessages()
 	return (m);
 }
 
-// ステータスコード設定
 void	HttpResponse::setStatusCode(int code)
 {
 	this->_statusCode = code;
 	this->_reasonPhrase = this->_getStatusMessage(code);
-	// エラー時はデフォルトエラーページを生成
 	if (code >= 400)
 	{
 		this->setBody(this->_generateDefaultErrorPage(code));
@@ -107,13 +127,11 @@ void	HttpResponse::setStatusCode(int code)
 	}
 }
 
-// リーズンフレーズ設定
 void	HttpResponse::setReasonPhrase(const std::string& phrase)
 {
 	this->_reasonPhrase = phrase;
 }
 
-// ヘッダー設定（インジェクション対策済み）
 void	HttpResponse::setHeader(const std::string& key, const std::string& value)
 {
 	if (value.find("\r\n") != std::string::npos || key.find("\r\n") != std::string::npos)
@@ -123,7 +141,6 @@ void	HttpResponse::setHeader(const std::string& key, const std::string& value)
 	this->_headers[this->_normalizeHeaderKey(key)] = value;
 }
 
-// ボディ設定
 void	HttpResponse::setBody(const std::string& body)
 {
 	std::stringstream	ss;
@@ -133,32 +150,37 @@ void	HttpResponse::setBody(const std::string& body)
 	this->setHeader("Content-Length", ss.str());
 }
 
-// ファイルからボディを読み込む
 void	HttpResponse::setBodyFromFile(const std::string& filepath)
 {
+	struct stat			fileStat;
 	std::ifstream		file(filepath.c_str(), std::ios::binary);
 	std::stringstream	buffer;
 
-	// ファイルが開けなかった場合は404エラーを設定して終了
-	if (!file.is_open())
+	if (stat(filepath.c_str(), &fileStat) != 0)
 	{
 		this->setStatusCode(404);
 		return ;
 	}
-	// ファイル内容を一括読み込み
+	if (S_ISDIR(fileStat.st_mode))
+	{
+		this->setStatusCode(403);
+		return ;
+	}
+	if (!file.is_open())
+	{
+		this->setStatusCode(403);
+		return ;
+	}
 	buffer << file.rdbuf();
 	this->setBody(buffer.str());
-	// 拡張子からContent-Typeを自動設定
 	this->setHeader("Content-Type", this->getContentType(filepath));
 }
 
-// HTTPバージョン設定
 void	HttpResponse::setHttpVersion(const std::string& version)
 {
 	this->_version = version;
 }
 
-// リダイレクト設定
 void	HttpResponse::setRedirect(int code, const std::string& location)
 {
 	this->setStatusCode(code);
@@ -166,13 +188,11 @@ void	HttpResponse::setRedirect(int code, const std::string& location)
 	this->setBody("");
 }
 
-// ヘッダーマップの取得
 const std::map<std::string, std::string>&	HttpResponse::getHeaders() const
 {
 	return (this->_headers);
 }
 
-// シリアライズ
 std::string	HttpResponse::serialize() const
 {
 	std::stringstream	ss;
@@ -187,7 +207,6 @@ std::string	HttpResponse::serialize() const
 	return (ss.str());
 }
 
-// ステータスメッセージ取得
 std::string	HttpResponse::_getStatusMessage(int code) const
 {
 	static std::map<int, std::string>			m = _initStatusMessages();
@@ -201,7 +220,6 @@ std::string	HttpResponse::_getStatusMessage(int code) const
 	return ("Unknown");
 }
 
-// 現在時刻取得
 std::string	HttpResponse::_getCurrentDate() const
 {
 	time_t		now;
@@ -214,7 +232,6 @@ std::string	HttpResponse::_getCurrentDate() const
 	return (std::string(buf));
 }
 
-// ヘッダー名正規化
 std::string	HttpResponse::_normalizeHeaderKey(const std::string& key) const
 {
 	std::string	normalized;
@@ -224,14 +241,16 @@ std::string	HttpResponse::_normalizeHeaderKey(const std::string& key) const
 	capitalize_next = true;
 	for (size_t i = 0; i < normalized.length(); ++i)
 	{
-		if (capitalize_next && std::tolower(normalized[i]))
+		if (capitalize_next)
 		{
-			normalized[i] = static_cast<char>(std::toupper(normalized[i]));
+			normalized[i] = static_cast<char>(
+				std::toupper(static_cast<unsigned char>(normalized[i])));
 			capitalize_next = false;
 		}
-		else if (!capitalize_next && std::toupper(normalized[i]))
+		else
 		{
-			normalized[i] = static_cast<char>(std::tolower(normalized[i]));
+			normalized[i] = static_cast<char>(
+				std::tolower(static_cast<unsigned char>(normalized[i])));
 		}
 		if (normalized[i] == '-')
 		{
@@ -241,7 +260,6 @@ std::string	HttpResponse::_normalizeHeaderKey(const std::string& key) const
 	return (normalized);
 }
 
-// デフォルトエラーページ生成
 std::string	HttpResponse::_generateDefaultErrorPage(int code) const
 {
 	std::stringstream	ss;
@@ -258,35 +276,45 @@ std::string	HttpResponse::_generateDefaultErrorPage(int code) const
 	return (ss.str());
 }
 
-// ディレクトリリスティング生成
 std::string	HttpResponse::generateDirectoryListing(const std::string& path, const std::string& uri)
 {
 	std::stringstream	ss;
 	DIR					*dir;
 	struct dirent		*entry;
+	std::string			baseUri;
 
 	dir = opendir(path.c_str());
 	if (dir == NULL)
 	{
 		return ("");
 	}
+	baseUri = uri;
+	if (baseUri.empty())
+	{
+		baseUri = "/";
+	}
 
-	ss << "<html>\r\n<head><title>Index of " << uri << "</title></head>\r\n";
-	ss << "<body>\r\n<h1>Index of " << uri << "</h1><hr><pre>\r\n";
+	ss << "<html>\r\n<head><title>Index of " << htmlEscape(baseUri)
+		<< "</title></head>\r\n";
+	ss << "<body>\r\n<h1>Index of " << htmlEscape(baseUri)
+		<< "</h1><hr><pre>\r\n";
 
 	while ((entry = readdir(dir)) != NULL)
 	{
 		std::string	name = entry->d_name;
+		std::string	displayName;
+
 		if (name == ".")
 		{
 			continue;
 		}
-		ss << "<a href=\"" << uri;
-		if (uri[uri.length() - 1] != '/')
+		displayName = htmlEscape(name);
+		ss << "<a href=\"" << htmlEscape(baseUri);
+		if (baseUri[baseUri.length() - 1] != '/')
 		{
 			ss << "/";
 		}
-		ss << name << "\">" << name << "</a>\r\n";
+		ss << displayName << "\">" << displayName << "</a>\r\n";
 	}
 	closedir(dir);
 
@@ -294,7 +322,6 @@ std::string	HttpResponse::generateDirectoryListing(const std::string& path, cons
 	return (ss.str());
 }
 
-// MIMEタイプ取得
 std::string	HttpResponse::getContentType(const std::string& path)
 {
 	size_t	dot_pos;
