@@ -19,6 +19,7 @@ const std::vector<ServerContext>& Config::getServers() const {
 
 void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i) {
 	ServerContext server;
+	bool index_specified = false;
 
 	i++;
 	if (i >= tokens.size() || tokens[i] != "{") {
@@ -53,6 +54,31 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 			}
 			if (i >= tokens.size() || tokens[i] != ";") {
 				throw ConfigException("Error: Expected ';' after server_name.");
+			}
+		}
+		else if (tokens[i] == "root") {
+			i++;
+			if (i >= tokens.size()) {
+				throw ConfigException("Error: Unexpected EOF after root.");
+			}
+			server.setRoot(tokens[i]);
+			i++;
+			if (i >= tokens.size() || tokens[i] != ";") {
+				throw ConfigException("Error: Expected ';' after root.");
+			}
+		}
+		else if (tokens[i] == "index") {
+			i++;
+			if (!index_specified) {
+				server.clearIndex();
+				index_specified = true;
+			}
+			while (i < tokens.size() && tokens[i] != ";") {
+				server.setIndex(tokens[i]);
+				i++;
+			}
+			if (i >= tokens.size() || tokens[i] != ";") {
+				throw ConfigException("Error: Expected ';' after index.");
 			}
 		}
 		else if (tokens[i] == "location") {
@@ -107,7 +133,13 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 	}
 
 	LocationContext location(tokens[i]);
+	bool index_specified = false;
 
+	location.setRoot(server.getRoot());
+	const std::vector<std::string>& parent_index = server.getIndex();
+	for (size_t j = 0; j < parent_index.size(); ++j) {
+		location.setIndex(parent_index[j]);
+	}
 	location.setClientMaxBodySize(server.getClientMaxBodySize());
 	const std::map<int, std::string>& parent_errors = server.getErrorPages();
 	for (std::map<int, std::string>::const_iterator it = parent_errors.begin(); it != parent_errors.end(); ++it) {
@@ -142,6 +174,10 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 		}
 		else if (tokens[i] == "index") {
 			i++;
+			if (!index_specified) {
+				location.clearIndex();
+				index_specified = true;
+			}
 			while (i < tokens.size() && tokens[i] != ";") {
 				location.setIndex(tokens[i]);
 				i++;
@@ -263,6 +299,9 @@ long Config::parseLong(const std::string& str) const {
 }
 
 unsigned long Config::parseUnsignedLong(const std::string& str) const {
+	if (str.empty() || !std::isdigit(str[0])) {
+		throw ConfigException("Error: Invalid unsigned number format: " + str);
+	}
 	char* endptr;
 	errno = 0;
 	unsigned long val = std::strtoul(str.c_str(), &endptr, 10);
@@ -271,7 +310,16 @@ unsigned long Config::parseUnsignedLong(const std::string& str) const {
 		throw ConfigException("Error: Number out of range: " + str);
 	}
 	if (*endptr != '\0') {
-		throw ConfigException("Error: Invalid unsigned number format: " + str);
+		std::string suffix = endptr;
+		if (suffix == "k" || suffix == "K") {
+			val *= 1024;
+		} else if (suffix == "m" || suffix == "M") {
+			val *= 1024 * 1024;
+		} else if (suffix == "g" || suffix == "G") {
+			val *= 1024 * 1024 * 1024;
+		} else {
+			throw ConfigException("Error: Invalid unsigned number format: " + str);
+		}
 	}
 	return val;
 }

@@ -42,6 +42,7 @@ class LocationContext {
 		void setRoot(const std::string& root);
 		void setAlias(const std::string& alias);
 		void setIndex(const std::string& index);
+		void clearIndex();
 		void setAutoindex(bool autoindex);
 		void setRedirect(int code, const std::string& url);
 		void setUploadEnable(bool enable);

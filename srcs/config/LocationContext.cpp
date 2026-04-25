@@ -5,6 +5,7 @@ LocationContext::LocationContext()
 		_allowed_methods(7),
 		_root(""),
 		_alias(""),
+		_index(),
 		_autoindex(false),
 		_redirect_code(0),
 		_redirect_url(""),
@@ -13,9 +14,7 @@ LocationContext::LocationContext()
 		_cgi_extensions(),
 		_cgi_info(),
 		_client_max_body_size(1048576),
-		_error_pages() {
-			_index.push_back("index.html");
-		}
+		_error_pages() {}
 
 LocationContext::~LocationContext() {}
 
@@ -60,6 +59,7 @@ LocationContext::LocationContext(const std::string& path)
 		_allowed_methods(7),
 		_root(""),
 		_alias(""),
+		_index(),
 		_autoindex(false),
 		_redirect_code(0),
 		_redirect_url(""),
@@ -68,9 +68,7 @@ LocationContext::LocationContext(const std::string& path)
 		_cgi_extensions(),
 		_cgi_info(),
 		_client_max_body_size(1048576),
-		_error_pages() {
-			_index.push_back("index.html");
-		}
+		_error_pages() {}
 
 void LocationContext::setPath(const std::string& path) {
 	this->_path = path;
@@ -96,6 +94,10 @@ void LocationContext::setAlias(const std::string& alias) {
 
 void LocationContext::setIndex(const std::string& index) {
 	this->_index.push_back(index);
+}
+
+void LocationContext::clearIndex() {
+	this->_index.clear();
 }
 
 void LocationContext::setAutoindex(bool autoindex) {
@@ -155,6 +157,13 @@ const std::string& LocationContext::getAlias() const {
 }
 
 const std::vector<std::string>& LocationContext::getIndex() const {
+	if (this->_index.empty()) {
+		static std::vector<std::string> default_index;
+		if (default_index.empty()) {
+			default_index.push_back("index.html");
+		}
+		return default_index;
+	}
 	return this->_index;
 }
 
