@@ -2,7 +2,7 @@
 
 LocationContext::LocationContext()
 	: _path(""),
-		_allowed_methods(0),
+		_allowed_methods(7),
 		_root(""),
 		_alias(""),
 		_autoindex(false),
@@ -10,7 +10,12 @@ LocationContext::LocationContext()
 		_redirect_url(""),
 		_upload_enable(false),
 		_upload_store(""),
-		_client_max_body_size(1048576) {}
+		_cgi_extensions(),
+		_cgi_info(),
+		_client_max_body_size(1048576),
+		_error_pages() {
+			_index.push_back("index.html");
+		}
 
 LocationContext::~LocationContext() {}
 
@@ -52,7 +57,7 @@ LocationContext& LocationContext::operator=(const LocationContext& other) {
 
 LocationContext::LocationContext(const std::string& path)
 	: _path(path),
-		_allowed_methods(0),
+		_allowed_methods(7),
 		_root(""),
 		_alias(""),
 		_autoindex(false),
@@ -60,7 +65,12 @@ LocationContext::LocationContext(const std::string& path)
 		_redirect_url(""),
 		_upload_enable(false),
 		_upload_store(""),
-		_client_max_body_size(1048576) {}
+		_cgi_extensions(),
+		_cgi_info(),
+		_client_max_body_size(1048576),
+		_error_pages() {
+			_index.push_back("index.html");
+		}
 
 void LocationContext::setPath(const std::string& path) {
 	this->_path = path;
