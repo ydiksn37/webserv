@@ -34,20 +34,30 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 			}
 			std::string listen_val = tokens[i];
 			size_t colon_pos = listen_val.find(':');
+			long port;
 			if (colon_pos != std::string::npos) {
-				std::string ip = listen_val.substr(0, colon_pos);
 				std::string port_str = listen_val.substr(colon_pos + 1);
-				server.setPort(static_cast<int>(parseLong(port_str)));
+				if (port_str.empty()) {
+					throw ConfigException("Error: Invalid listen format.");
+				}
+				port = parseLong(port_str);
 			} else {
-				server.setPort(static_cast<int>(parseLong(listen_val)));
+				port = parseLong(listen_val);
 			}
+			if (port <= 0 || port > 65535) {
+				throw ConfigException("Error: Port out of range: " + tokens[i]);
+			}
+			server.setPort(static_cast<int>(port));
 			i++;
 			if (i >= tokens.size() || tokens[i] != ";") {
-				throw ConfigException("Error: Expected ';' after listen port.");
+				throw ConfigException("Error: Expected ';' after listen.");
 			}
 		}
 		else if (tokens[i] == "server_name") {
 			i++;
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: server_name requires at least one argument.");
+			}
 			while (i < tokens.size() && tokens[i] != ";") {
 				server.setServerName(tokens[i]);
 				i++;
@@ -58,8 +68,8 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 		}
 		else if (tokens[i] == "root") {
 			i++;
-			if (i >= tokens.size()) {
-				throw ConfigException("Error: Unexpected EOF after root.");
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: root requires an argument.");
 			}
 			server.setRoot(tokens[i]);
 			i++;
@@ -69,6 +79,9 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 		}
 		else if (tokens[i] == "index") {
 			i++;
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: index requires at least one argument.");
+			}
 			if (!index_specified) {
 				server.clearIndex();
 				index_specified = true;
@@ -86,8 +99,8 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 		}
 		else if (tokens[i] == "client_max_body_size") {
 			i++;
-			if (i >= tokens.size()) {
-				throw ConfigException("Error: Unexpected EOF after client_max_body_size.");
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: client_max_body_size requires an argument.");
 			}
 			server.setClientMaxBodySize(parseUnsignedLong(tokens[i]));
 			i++;
@@ -98,12 +111,19 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 		else if (tokens[i] == "error_page") {
 			i++;
 			std::vector<int> codes;
-			while (i < tokens.size() && tokens[i] != ";" && isdigit(tokens[i][0])) {
-				codes.push_back(static_cast<int>(parseLong(tokens[i])));
+			while (i < tokens.size() && tokens[i] != ";" && std::isdigit(tokens[i][0])) {
+				long code = parseLong(tokens[i]);
+				if (code < 300 || code > 599) {
+					throw ConfigException("Error: Invalid error code: " + tokens[i]);
+				}
+				codes.push_back(static_cast<int>(code));
 				i++;
 			}
+			if (codes.empty()) {
+				throw ConfigException("Error: error_page requires at least one status code.");
+			}
 			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: Expected status code for error_page.");
+				throw ConfigException("Error: error_page requires a destination path.");
 			}
 			std::string path = tokens[i];
 			for (size_t j = 0; j < codes.size(); ++j) {
@@ -154,6 +174,9 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 	while (i < tokens.size() && tokens[i] != "}") {
 		if (tokens[i] == "allow_methods" || tokens[i] == "allow_method") {
 			i++;
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: allow_methods requires at least one argument.");
+			}
 			while (i < tokens.size() && tokens[i] != ";") {
 				if (tokens[i] != "GET" && tokens[i] != "POST" && tokens[i] != "DELETE") {
 					throw ConfigException("Error: Invalid or unsupported HTTP method '" + tokens[i] + "' in allow_methods.");
@@ -164,16 +187,25 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 		}
 		else if (tokens[i] == "root") {
 			i++;
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: root requires an argument.");
+			}
 			location.setRoot(tokens[i]);
 			i++;
 		}
 		else if (tokens[i] == "alias") {
 			i++;
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: alias requires an argument.");
+			}
 			location.setAlias(tokens[i]);
 			i++;
 		}
 		else if (tokens[i] == "index") {
 			i++;
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: index requires at least one argument.");
+			}
 			if (!index_specified) {
 				location.clearIndex();
 				index_specified = true;
@@ -185,34 +217,58 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 		}
 		else if (tokens[i] == "autoindex") {
 			i++;
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: autoindex requires 'on' or 'off'.");
+			}
+			if (tokens[i] != "on" && tokens[i] != "off") {
+				throw ConfigException("Error: autoindex must be 'on' or 'off'.");
+			}
 			location.setAutoindex(tokens[i] == "on");
 			i++;
 		}
 		else if (tokens[i] == "return") {
 			i++;
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: return requires a status code and URL.");
+			}
 			int code = static_cast<int>(parseLong(tokens[i]));
+			if (code < 300 || code > 599) {
+				throw ConfigException("Error: Invalid redirect code: " + tokens[i]);
+			}
 			i++;
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: return requires a URL.");
+			}
 			location.setRedirect(code, tokens[i]);
 			i++;
 		}
 		else if (tokens[i] == "upload_enable") {
 			i++;
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: upload_enable requires 'on' or 'off'.");
+			}
+			if (tokens[i] != "on" && tokens[i] != "off") {
+				throw ConfigException("Error: upload_enable must be 'on' or 'off'.");
+			}
 			location.setUploadEnable(tokens[i] == "on");
 			i++;
 		}
 		else if (tokens[i] == "upload_store") {
 			i++;
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: upload_store requires a path.");
+			}
 			location.setUploadStore(tokens[i]);
 			i++;
 		}
 		else if (tokens[i] == "cgi_extension") {
 			i++;
 			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: 'cgi_extension' requires at least one argument.");
+				throw ConfigException("Error: cgi_extension requires at least one argument.");
 			}
 			while (i < tokens.size() && tokens[i] != ";") {
 				if (tokens[i][0] != '.') {
-					throw ConfigException("Error: CGI extension must start with a dot (e.g., '.php'): " + tokens[i]);
+					throw ConfigException("Error: CGI extension must start with a dot: " + tokens[i]);
 				}
 				location.setCgiExtension(tokens[i]);
 				i++;
@@ -220,13 +276,13 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 		}
 		else if (tokens[i] == "cgi_path") {
 			i++;
-			if (i >= tokens.size()) {
-				throw ConfigException("Error: Unexpected EOF in cgi_path.");
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: cgi_path requires an extension and a path.");
 			}
 			std::string ext = tokens[i];
 			i++;
-			if (i >= tokens.size()) {
-				throw ConfigException("Error: Unexpected EOF in cgi_path.");
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: cgi_path requires a path.");
 			}
 			std::string path = tokens[i];
 			location.setCgiPath(ext, path);
@@ -234,8 +290,8 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 		}
 		else if (tokens[i] == "client_max_body_size") {
 			i++;
-			if (i >= tokens.size()) {
-				throw ConfigException("Error: Unexpected EOF in client_max_body_size.");
+			if (i >= tokens.size() || tokens[i] == ";") {
+				throw ConfigException("Error: client_max_body_size requires an argument.");
 			}
 			location.setClientMaxBodySize(parseUnsignedLong(tokens[i]));
 			i++;
@@ -243,12 +299,19 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 		else if (tokens[i] == "error_page") {
 			i++;
 			std::vector<int> codes;
-			while (i < tokens.size() && tokens[i] != ";" && isdigit(tokens[i][0])) {
-				codes.push_back(static_cast<int>(parseLong(tokens[i])));
+			while (i < tokens.size() && tokens[i] != ";" && std::isdigit(tokens[i][0])) {
+				long code = parseLong(tokens[i]);
+				if (code < 300 || code > 599) {
+					throw ConfigException("Error: Invalid error code: " + tokens[i]);
+				}
+				codes.push_back(static_cast<int>(code));
 				i++;
 			}
+			if (codes.empty()) {
+				throw ConfigException("Error: error_page requires at least one status code.");
+			}
 			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: Expected status code for error_page.");
+				throw ConfigException("Error: error_page requires a destination path.");
 			}
 			std::string path = tokens[i];
 			for (size_t j = 0; j < codes.size(); ++j) {
@@ -257,15 +320,12 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 			i++;
 		}
 		else {
-			std::cerr << "Warning: Unknown location directive '" << tokens[i] << "'" << std::endl;
-			while (i < tokens.size() && tokens[i] != ";" && tokens[i] != "}") {
-				i++;
-			}
+			throw ConfigException("Error: Unknown location directive '" + tokens[i] + "'");
 		}
 		if (i < tokens.size() && tokens[i] == ";") {
 			i++;
 		} else if (i < tokens.size() && tokens[i] != "}") {
-			throw ConfigException("Error: Expected ';' after location directive.");
+			throw ConfigException("Error: Expected ';' after location directive '" + tokens[i-1] + "'.");
 		}
 	}
 	if (i < tokens.size() && tokens[i] == "}") {
