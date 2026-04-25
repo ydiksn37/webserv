@@ -10,7 +10,7 @@
 # include <stdexcept>
 # include <cctype>
 # include <cerrno>
-# include "ServerContext.hpp"
+# include "../srcs/config/ServerContext.hpp"
 
 class Config {
 	private:

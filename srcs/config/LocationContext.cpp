@@ -1,4 +1,4 @@
-#include "../../includes/config/LocationContext.hpp"
+#include "LocationContext.hpp"
 
 LocationContext::LocationContext()
 	: _path(""),

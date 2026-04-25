@@ -1,4 +1,4 @@
-#include "../../includes/config/ServerContext.hpp"
+#include "ServerContext.hpp"
 
 ServerContext::ServerContext()
 	: _port(80),
