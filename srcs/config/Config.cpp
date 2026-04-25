@@ -1,4 +1,4 @@
-#include "../../includes/config/Config.hpp"
+#include "../../includes/Config.hpp"
 
 Config::Config() : _servers() {}
 
