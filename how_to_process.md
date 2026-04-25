@@ -16,7 +16,7 @@ private:
 	// ...etc
 
 public:
-  // ...etc
+	// ...etc
 };
 ```
 
@@ -30,7 +30,7 @@ private:
 	// ...etc
 
 public:
-  // ...etc
+	// ...etc
 };
 ```
 
@@ -44,7 +44,7 @@ private:
 	// ...etc
 
 public:
-  // ...etc
+	// ...etc
 };
 ```
 
