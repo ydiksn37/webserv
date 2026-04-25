@@ -1,5 +1,6 @@
 #include "Client.hpp"
 #include <cstddef>
+#include <cstdlib>
 #include <iostream>
 #include <ostream>
 #include <string>
@@ -35,25 +36,62 @@ int Client::Read(int fd)
 				break;
 			client_[fd].header_parsed = true;
 			client_[fd].header_length = pos + 4;
-			client_[fd].body_length = GetContentLength(client_[fd].read_buffer.substr(0,client_[fd].header_length));
+			client_[fd].header = client_[fd].read_buffer.substr(0,client_[fd].header_length);
+			client_[fd].read_buffer.erase(0,client_[fd].header_length);
+			if(IsChunked(client_[fd].header))
+				client_[fd].chunked = true;
+			else
+				client_[fd].body_length = GetContentLength(client_[fd].header);
 		}
 		if(client_[fd].header_parsed)
 		{
-			unsigned total_length = client_[fd].header_length + client_[fd].body_length;
-			if(client_[fd].read_buffer.size() >= total_length)
+			if(client_[fd].chunked)
 			{
-				std::string request = client_[fd].read_buffer.substr(0,total_length);
-				std::cout<<"\033[95m[READ]\033[0m "<<std::endl;
-				std::cout<<request<<std::endl;
-				client_[fd].write_buffer.append(Engine(request));
-				client_[fd].read_buffer.erase(0,total_length);
-				client_[fd].header_parsed = false;
-				client_[fd].header_length = 0;
-				client_[fd].body_length = 0;
-
+				size_t pos = client_[fd].read_buffer.find("\r\n");
+				if(pos == std::string::npos)
+					break;
+				char *endptr = NULL;
+				size_t size = std::strtoul(client_[fd].read_buffer.c_str(),&endptr,16);
+				if(endptr == client_[fd].read_buffer.c_str() || (*endptr !='\r' && *endptr != '\0'))
+				{
+					client_.erase(fd);
+					return -1;
+				}
+				if(size==0)
+				{
+					std::cout<<"\033[95m[READ]\033[0m "<<std::endl;
+					std::cout<<client_[fd].header+client_[fd].unchunked_body<<std::endl;
+					client_[fd].read_buffer.erase(0,pos+4);
+					client_[fd].write_buffer.append(Engine(client_[fd].header+client_[fd].unchunked_body));
+					client_[fd].header_parsed = false;
+					client_[fd].header_length = 0;
+					client_[fd].chunked = false;
+				}
+				else if(pos+2+size <= client_[fd].read_buffer.size())
+				{
+					client_[fd].unchunked_body.append(client_[fd].read_buffer.substr(pos+2,size));
+					client_[fd].read_buffer.erase(0,pos+2+size+2);
+				}
+				else
+					break;
 			}
 			else
-				break;
+			{
+				if(client_[fd].read_buffer.size() >= client_[fd].body_length)
+				{
+					std::string request = client_[fd].header + client_[fd].read_buffer.substr(0,client_[fd].body_length);
+					std::cout<<"\033[95m[READ]\033[0m "<<std::endl;
+					std::cout<<request<<std::endl;
+					client_[fd].write_buffer.append(Engine(request));
+					client_[fd].read_buffer.erase(0,client_[fd].body_length);
+					client_[fd].header_parsed = false;
+					client_[fd].header_length = 0;
+					client_[fd].body_length = 0;
+
+				}
+				else
+					break;
+			}
 		}
 	}
 	return 0;

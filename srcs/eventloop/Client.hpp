@@ -21,9 +21,12 @@ class Client
 			bool header_parsed;
 			unsigned header_length;
 			unsigned body_length;
+			bool chunked;
+			std::string header; // Engineができたらクラスに置き換える
+			std::string unchunked_body;
 			std::string write_buffer;
 			unsigned current_epoll_events;
-			ClientData():header_parsed(false),header_length(0),body_length(0),current_epoll_events(EPOLLIN){}
+			ClientData():header_parsed(false),header_length(0),body_length(0),chunked(false),current_epoll_events(EPOLLIN){}
 		};
 		std::map<int,ClientData> client_;
 };
