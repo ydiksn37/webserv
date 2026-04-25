@@ -316,7 +316,7 @@ void	HttpRequest::clear()
 	this->_version.clear();
 	this->_headers.clear();
 	this->_body.clear();
-	this->_buffer.clear();
+	// this->_buffer.clear();
 	this->_chunkSize = 0;
 	this->_contentLength = 0;
 	this->_hasContentLength = false;

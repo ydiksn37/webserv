@@ -5,6 +5,7 @@
 # include <string>
 # include <map>
 # include <vector>
+# include "Config.hpp"
 
 // HTTPリクエストを解析・保持するクラス
 class HttpRequest
