@@ -4,3 +4,4 @@ webserv
 *.o
 compile_commands.json
 *.d
+compile_flags.txt
