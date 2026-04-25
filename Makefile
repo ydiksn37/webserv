@@ -6,8 +6,6 @@ INCFLAGS    = -I./includes
 CXXFLAGS    = -Wall -Wextra -Werror -std=c++98 -pedantic -O3
 DEPFLAGS    = -MMD -MP
 
-UNAME_S     := $(shell uname -s)
-
 RM          = rm -f
 MAKE        = make
 MAKE_FLAGS  += --no-print-directory
