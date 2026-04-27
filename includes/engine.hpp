@@ -6,6 +6,7 @@
 # include "Config.hpp"
 #include <string>
 
-std::string	engine(const Config &config, HttpRequest &request);
+std::string		Engine(const Config &config, const std::string& raw_request);
+HttpResponse	engine(const Config &config, const HttpRequest &request);
 
 #endif
