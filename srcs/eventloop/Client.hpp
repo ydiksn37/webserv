@@ -15,6 +15,7 @@ class Client
 		bool WriteEnd(int fd);
 	private:
 		static const unsigned buffer_size = 8096;
+		void GenResponse(int fd, std::string request);
 		struct ClientData
 		{
 			std::string read_buffer;

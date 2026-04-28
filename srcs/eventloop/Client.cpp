@@ -16,6 +16,18 @@ bool endswith(std::string str, std::string suffix)
 
 Client::Client(){}
 
+void  Client::GenResponse(int fd,std::string request)
+{
+	std::cout<<"\033[95m[READ]\033[0m "<<std::endl;
+	std::cout<<request<<std::endl;
+	client_[fd].write_buffer.append(Engine(request));
+	client_[fd].header_parsed = false;
+	client_[fd].header_length = 0;
+	client_[fd].body_length = 0;
+	client_[fd].chunked = false;
+}
+
+
 int Client::Read(int fd)
 {
 	char tmp_buffer[buffer_size];
@@ -59,13 +71,8 @@ int Client::Read(int fd)
 				}
 				if(size==0)
 				{
-					std::cout<<"\033[95m[READ]\033[0m "<<std::endl;
-					std::cout<<client_[fd].header+client_[fd].unchunked_body<<std::endl;
 					client_[fd].read_buffer.erase(0,pos+4);
-					client_[fd].write_buffer.append(Engine(client_[fd].header+client_[fd].unchunked_body));
-					client_[fd].header_parsed = false;
-					client_[fd].header_length = 0;
-					client_[fd].chunked = false;
+					GenResponse(fd, client_[fd].header+client_[fd].unchunked_body);
 				}
 				else if(pos+2+size <= client_[fd].read_buffer.size())
 				{
@@ -79,15 +86,8 @@ int Client::Read(int fd)
 			{
 				if(client_[fd].read_buffer.size() >= client_[fd].body_length)
 				{
-					std::string request = client_[fd].header + client_[fd].read_buffer.substr(0,client_[fd].body_length);
-					std::cout<<"\033[95m[READ]\033[0m "<<std::endl;
-					std::cout<<request<<std::endl;
-					client_[fd].write_buffer.append(Engine(request));
+					GenResponse(fd,client_[fd].header + client_[fd].read_buffer.substr(0,client_[fd].body_length));
 					client_[fd].read_buffer.erase(0,client_[fd].body_length);
-					client_[fd].header_parsed = false;
-					client_[fd].header_length = 0;
-					client_[fd].body_length = 0;
-
 				}
 				else
 					break;
