@@ -11,12 +11,28 @@ struct RouteContext
 	RouteContext() : server(NULL), location(NULL) {}
 };
 
-static HttpResponse	buildStatusResponse(int status_code)
+static void	applyErrorPage(HttpResponse &response, int code, const LocationContext *location, const ServerContext *server)
 {
-	HttpResponse	response;
+	response.setStatusCode(code);
+	const std::map<int, std::string> *error_pages = NULL;
 
-	response.setStatusCode(status_code);
-	return (response);
+	if (location != NULL)
+	{
+		error_pages = &location->getErrorPages();
+	}
+	else if (server != NULL)
+	{
+		error_pages = &server->getErrorPages();
+	}
+
+	if (error_pages != NULL)
+	{
+		std::map<int, std::string>::const_iterator it = error_pages->find(code);
+		if (it != error_pages->end())
+		{
+			response.setBodyFromFile(it->second);
+		}
+	}
 }
 
 static HttpResponse	buildPlaceholderResponse(const HttpRequest &request,
@@ -50,12 +66,17 @@ static HttpResponse	buildPlaceholderResponse(const HttpRequest &request,
 	return (response);
 }
 
-static HttpResponse	buildMethodNotAllowedResponse(void)
+static HttpResponse	buildMethodNotAllowedResponse(const LocationContext &location)
 {
 	HttpResponse	response;
+	std::string		allow;
+
+	if (location.getIsMethodAllowed("GET")) allow += "GET";
+	if (location.getIsMethodAllowed("POST")) { if (!allow.empty()) allow += ", "; allow += "POST"; }
+	if (location.getIsMethodAllowed("DELETE")) { if (!allow.empty()) allow += ", "; allow += "DELETE"; }
 
 	response.setStatusCode(405);
-	response.setHeader("Allow", "GET, POST, DELETE");
+	response.setHeader("Allow", allow);
 	return (response);
 }
 
@@ -103,49 +124,24 @@ static const LocationContext	*selectLocation(const Config &config,
 	return (config.matchLocation(server, request.getPath()));
 }
 
-static HttpResponse	buildRedirectResponse(const LocationContext &location)
-{
-	HttpResponse	response;
-
-	response.setRedirect(location.getRedirectCode(), location.getRedirectUrl());
-	return (response);
-}
-
-static bool	parseRequest(const std::string &raw_request,
-	HttpRequest &request,
-	HttpResponse &response)
-{
-	request.parse(raw_request);
-	if (request.isError())
-	{
-		response = buildStatusResponse(request.getErrorCode());
-		return (false);
-	}
-	if (!request.isCompleted())
-	{
-		response = buildStatusResponse(400);
-		return (false);
-	}
-	return (true);
-}
-
 static bool	resolveRoute(const Config &config,
-	const HttpRequest &request,
+	HttpRequest &request,
 	RouteContext &route,
 	HttpResponse &response)
 {
 	route.server = selectServer(config, request);
 	if (route.server == NULL)
 	{
-		response.setStatusCode(404);
+		applyErrorPage(response, 404, NULL, NULL);
 		return (false);
 	}
 	route.location = selectLocation(config, route.server, request);
 	if (route.location == NULL)
 	{
-		response.setStatusCode(404);
+		applyErrorPage(response, 404, NULL, route.server);
 		return (false);
 	}
+	request.setMaxBodySize(route.location->getClientMaxBodySize());
 	return (true);
 }
 
@@ -160,7 +156,8 @@ static bool	prepareResponse(const HttpRequest &request,
 	}
 	if (!route.location->getIsMethodAllowed(request.getMethod()))
 	{
-		response = buildMethodNotAllowedResponse();
+		response = buildMethodNotAllowedResponse(*route.location);
+		applyErrorPage(response, 405, route.location, route.server);
 		return (false);
 	}
 	return (true);
@@ -203,39 +200,42 @@ static HttpResponse	dispatchMethod(const HttpRequest &request,
 	{
 		return (handleDelete(request, server, location));
 	}
-	return (buildStatusResponse(501));
+	
+	HttpResponse response;
+	applyErrorPage(response, 501, &location, &server);
+	return (response);
 }
 
-std::string	Engine(const Config &config, const std::string& raw_request)
-{
-	HttpRequest		request;
-
-	request.parse(raw_request);
-	return (engine(config, request).serialize());
-}
-
-HttpResponse	engine(const Config &config, const HttpRequest &request)
+HttpResponse	engine(const Config &config, HttpRequest &request)
 {
 	RouteContext	route;
 	HttpResponse	response;
 
+	response.setHttpVersion(request.getVersion());
+
 	if (request.isError())
 	{
-		response.setStatusCode(request.getErrorCode());
+		applyErrorPage(response, request.getErrorCode(), NULL, NULL);
 		return (response);
 	}
+
+	if (request.isHeaderFinished())
+	{
+		if (!resolveRoute(config, request, route, response))
+		{
+			return (response);
+		}
+		if (!prepareResponse(request, route, response))
+		{
+			return (response);
+		}
+		request.setRoutingResolved(true);
+	}
+
 	if (!request.isCompleted())
 	{
-		response.setStatusCode(400);
 		return (response);
 	}
-	if (!resolveRoute(config, request, route, response))
-	{
-		return (response);
-	}
-	if (!prepareResponse(request, route, response))
-	{
-		return (response);
-	}
+
 	return (dispatchMethod(request, *route.server, *route.location));
 }
