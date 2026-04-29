@@ -5,6 +5,8 @@ ServerContext::ServerContext()
 		_server_names(),
 		_client_max_body_size(1048576),
 		_error_pages(),
+		_root(""),
+		_index(),
 		_locations() {}
 
 ServerContext::~ServerContext() {}
@@ -14,6 +16,8 @@ ServerContext::ServerContext(const ServerContext& other)
 		_server_names(other._server_names),
 		_client_max_body_size(other._client_max_body_size),
 		_error_pages(other._error_pages),
+		_root(other._root),
+		_index(other._index),
 		_locations(other._locations) {}
 
 ServerContext& ServerContext::operator=(const ServerContext& other) {
@@ -22,6 +26,8 @@ ServerContext& ServerContext::operator=(const ServerContext& other) {
 		this->_server_names = other._server_names;
 		this->_client_max_body_size = other._client_max_body_size;
 		this->_error_pages = other._error_pages;
+		this->_root = other._root;
+		this->_index = other._index;
 		this->_locations = other._locations;
 	}
 	return *this;
@@ -41,6 +47,18 @@ void ServerContext::setClientMaxBodySize(size_t size) {
 
 void ServerContext::setErrorPage(int status_code, const std::string& path) {
 	this->_error_pages[status_code] = path;
+}
+
+void ServerContext::setRoot(const std::string& root) {
+	this->_root = root;
+}
+
+void ServerContext::setIndex(const std::string& index) {
+	this->_index.push_back(index);
+}
+
+void ServerContext::clearIndex() {
+	this->_index.clear();
 }
 
 void ServerContext::setLocation(const LocationContext& location) {
@@ -65,6 +83,21 @@ size_t ServerContext::getClientMaxBodySize() const {
 
 const std::map<int, std::string>& ServerContext::getErrorPages() const {
 	return this->_error_pages;
+}
+
+const std::string& ServerContext::getRoot() const {
+	return this->_root;
+}
+
+const std::vector<std::string>& ServerContext::getIndex() const {
+	if (this->_index.empty()) {
+		static std::vector<std::string> default_index;
+		if (default_index.empty()) {
+			default_index.push_back("index.html");
+		}
+		return default_index;
+	}
+	return this->_index;
 }
 
 const std::vector<LocationContext>& ServerContext::getLocations() const {
