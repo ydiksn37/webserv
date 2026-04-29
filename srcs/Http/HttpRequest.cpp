@@ -316,7 +316,6 @@ void	HttpRequest::clear()
 	this->_version.clear();
 	this->_headers.clear();
 	this->_body.clear();
-	// this->_buffer.clear();
 	this->_chunkSize = 0;
 	this->_contentLength = 0;
 	this->_hasContentLength = false;
@@ -329,6 +328,7 @@ const std::string&	HttpRequest::getPath() const { return (this->_path); }
 const std::string&	HttpRequest::getQuery() const { return (this->_query); }
 const std::string&	HttpRequest::getVersion() const { return (this->_version); }
 const std::string&	HttpRequest::getBody() const { return (this->_body); }
+size_t				HttpRequest::getContentLength() const { return (this->_contentLength); }
 int					HttpRequest::getErrorCode() const { return (this->_errorCode); }
 
 void	HttpRequest::setMaxBodySize(size_t max) { this->_maxBodySize = max; }
