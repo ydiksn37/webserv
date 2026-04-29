@@ -137,13 +137,13 @@ static bool	resolveRoute(const Config &config,
 	route.server = selectServer(config, request);
 	if (route.server == NULL)
 	{
-		response = buildStatusResponse(404);
+		response.setStatusCode(404);
 		return (false);
 	}
 	route.location = selectLocation(config, route.server, request);
 	if (route.location == NULL)
 	{
-		response = buildStatusResponse(404);
+		response.setStatusCode(404);
 		return (false);
 	}
 	return (true);
@@ -155,7 +155,7 @@ static bool	prepareResponse(const HttpRequest &request,
 {
 	if (route.location->getRedirectCode() != 0)
 	{
-		response = buildRedirectResponse(*route.location);
+		response.setRedirect(route.location->getRedirectCode(), route.location->getRedirectUrl());
 		return (false);
 	}
 	if (!route.location->getIsMethodAllowed(request.getMethod()))
@@ -209,13 +209,9 @@ static HttpResponse	dispatchMethod(const HttpRequest &request,
 std::string	Engine(const Config &config, const std::string& raw_request)
 {
 	HttpRequest		request;
-	HttpResponse	response;
 
-	if (parseRequest(raw_request, request, response))
-	{
-		response = engine(config, request);
-	}
-	return (response.serialize());
+	request.parse(raw_request);
+	return (engine(config, request).serialize());
 }
 
 HttpResponse	engine(const Config &config, const HttpRequest &request)
@@ -225,7 +221,13 @@ HttpResponse	engine(const Config &config, const HttpRequest &request)
 
 	if (request.isError())
 	{
-		return (buildStatusResponse(request.getErrorCode()));
+		response.setStatusCode(request.getErrorCode());
+		return (response);
+	}
+	if (!request.isCompleted())
+	{
+		response.setStatusCode(400);
+		return (response);
 	}
 	if (!resolveRoute(config, request, route, response))
 	{
