@@ -1,3 +1,3 @@
-#include "Epoll.hpp"
+#include "Config.hpp"
 
-void EventLoop(Epoll& ep);
+void EventLoop(const Config& config);

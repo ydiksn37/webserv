@@ -1,11 +1,13 @@
 #include "Epoll.hpp"
 #include "eventloop_int.hpp"
+#include "Config.hpp"
 #include <cerrno>
 #include <cstddef>
 #include <cstring>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <algorithm>
 
 Epoll::Epoll()
 {
@@ -13,6 +15,24 @@ Epoll::Epoll()
 	if(epfd_ < 0)
 		throw strerror(errno);
 	events_.resize(max_events_);
+}
+
+Epoll::Epoll(const Config& config)
+{
+	epfd_ = epoll_create(1);
+	if(epfd_ < 0)
+		throw strerror(errno);
+	events_.resize(max_events_);
+
+	std::vector<ServerContext> servers = config.getServers();
+	std::vector<int> ports;
+
+	for(unsigned i=0;i<servers.size();i++)
+		ports.push_back(servers[i].getPort());
+	std::sort(ports.begin(),ports.end());
+	ports.erase(std::unique(ports.begin(),ports.end()),ports.end());
+	for(unsigned i=0;i<ports.size();i++)
+		AddListener(ports[i]);
 }
 
 Epoll::~Epoll(){}

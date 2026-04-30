@@ -3,12 +3,13 @@
 #include <map>
 #include <string>
 #include <sys/epoll.h>
+#include "Config.hpp"
 
 
 class Client
 {
 	public:
-		Client();
+		Client(const Config& config);
 		int Read(int fd);
 		void Write(int fd);
 		bool WriteBegin(int fd);
@@ -16,6 +17,7 @@ class Client
 	private:
 		static const unsigned buffer_size = 8096;
 		void GenResponse(int fd, std::string request);
+		Config config_;
 		struct ClientData
 		{
 			std::string read_buffer;

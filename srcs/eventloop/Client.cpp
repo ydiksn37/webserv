@@ -14,7 +14,7 @@ bool endswith(std::string str, std::string suffix)
 	return str.substr(str.size()-suffix.size()) == suffix;
 }
 
-Client::Client(){}
+Client::Client(const Config& config):config_(config){}
 
 void  Client::GenResponse(int fd,std::string request)
 {
