@@ -4,7 +4,7 @@
 #include <string>
 #include <sys/epoll.h>
 #include "Config.hpp"
-
+#include "../Http/HttpRequest.hpp"
 
 class Client
 {
@@ -20,16 +20,10 @@ class Client
 		Config config_;
 		struct ClientData
 		{
-			std::string read_buffer;
-			bool header_parsed;
-			unsigned header_length;
-			unsigned body_length;
-			bool chunked;
-			std::string header; // Engineができたらクラスに置き換える
-			std::string unchunked_body;
+			HttpRequest request;
 			std::string write_buffer;
 			unsigned current_epoll_events;
-			ClientData():header_parsed(false),header_length(0),body_length(0),chunked(false),current_epoll_events(EPOLLIN){}
+			ClientData():current_epoll_events(EPOLLIN){}
 		};
 		std::map<int,ClientData> client_;
 };
