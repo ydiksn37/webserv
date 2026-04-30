@@ -11,11 +11,7 @@ MAKE        = make
 MAKE_FLAGS  += --no-print-directory
 
 SRCDIR      = srcs
-SRCS        = srcs/eventloop/EventLoop.cpp srcs/eventloop/Client.cpp srcs/eventloop/Server.cpp \
-			  srcs/eventloop/Socket.cpp srcs/eventloop/test.cpp srcs/eventloop/Epoll.cpp \
-			  srcs/config/Config.cpp srcs/config/LocationContext.cpp srcs/config/ServerContext.cpp \
-			  srcs/engine/engine.cpp srcs/Http/HttpResponse.cpp srcs/Http/HttpRequest.cpp srcs/main.cpp
-# SRCS        = $(shell find $(SRCDIR) -type f -name "*.cpp")
+SRCS        = $(shell find $(SRCDIR) -type f -name "*.cpp")
 
 OBJS        = $(SRCS:%.cpp=%.o)
 DEPS        = $(OBJS:%.o=%.d)

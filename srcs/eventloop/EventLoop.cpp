@@ -4,8 +4,29 @@
 #include <ostream>
 #include <sys/epoll.h>
 #include <unistd.h>
-#include "eventloop_int.hpp"
 #include "Config.hpp"
+
+std::string get_epoll_events_str(uint32_t events) {
+	std::string str = "";
+
+	if (events & EPOLLIN)      str += "EPOLLIN ";
+	if (events & EPOLLOUT)     str += "EPOLLOUT ";
+
+#ifdef EPOLLRDHUP
+	if (events & EPOLLRDHUP)   str += "EPOLLRDHUP ";
+#endif
+
+	if (events & EPOLLERR)     str += "EPOLLERR ";
+	if (events & EPOLLHUP)     str += "EPOLLHUP ";
+	if (events & EPOLLPRI)     str += "EPOLLPRI ";
+
+	if (events & EPOLLET)      str += "EPOLLET ";
+	if (events & EPOLLONESHOT) str += "EPOLLONESHOT ";
+
+	if (str.empty())           str = "UNKNOWN ";
+
+	return str;
+}
 
 void EventLoop(const Config& config)
 {

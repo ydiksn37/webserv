@@ -1,5 +1,5 @@
 #include "Epoll.hpp"
-#include "eventloop_int.hpp"
+#include "Socket.hpp"
 #include "Config.hpp"
 #include <cerrno>
 #include <cstddef>
@@ -8,12 +8,13 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <algorithm>
+#include "EventLoop.hpp"
 
 Epoll::Epoll()
 {
 	epfd_ = epoll_create(1);
 	if(epfd_ < 0)
-		throw strerror(errno);
+		throw EventLoopException(strerror(errno));
 	events_.resize(max_events_);
 }
 
@@ -21,7 +22,7 @@ Epoll::Epoll(const Config& config)
 {
 	epfd_ = epoll_create(1);
 	if(epfd_ < 0)
-		throw strerror(errno);
+		throw EventLoopException(strerror(errno));
 	events_.resize(max_events_);
 
 	std::vector<ServerContext> servers = config.getServers();
@@ -73,7 +74,7 @@ void Epoll::Accept(int fd)
 {
 	int client_fd = accept(fd, NULL, NULL);
 	if(client_fd < 0)
-		throw strerror(errno);
+		throw EventLoopException(strerror(errno));
 	Add(client_fd, EPOLLIN);
 }
 
@@ -82,7 +83,7 @@ const std::vector<epoll_event>& Epoll::WaitEvents()
 	events_.resize(max_events_);
 	int events_size = epoll_wait(epfd_,events_.data() , events_.size(), -1);
 	if(events_size < 0)
-		throw strerror(errno);
+		throw EventLoopException(strerror(errno));
 	events_.resize(events_size);
 	return events_;
 }
