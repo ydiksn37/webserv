@@ -3,27 +3,27 @@
 #include <map>
 #include <string>
 #include <sys/epoll.h>
-
+#include "Config.hpp"
+#include "../Http/HttpRequest.hpp"
 
 class Client
 {
 	public:
-		Client();
+		Client(const Config& config);
 		int Read(int fd);
 		void Write(int fd);
 		bool WriteBegin(int fd);
 		bool WriteEnd(int fd);
 	private:
 		static const unsigned buffer_size = 8096;
+		void GenResponse(int fd, std::string request);
+		Config config_;
 		struct ClientData
 		{
-			std::string read_buffer;
-			bool header_parsed;
-			unsigned header_length;
-			unsigned body_length;
+			HttpRequest request;
 			std::string write_buffer;
 			unsigned current_epoll_events;
-			ClientData():header_parsed(false),header_length(0),body_length(0),current_epoll_events(EPOLLIN){}
+			ClientData():current_epoll_events(EPOLLIN){}
 		};
 		std::map<int,ClientData> client_;
 };

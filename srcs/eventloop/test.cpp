@@ -1,4 +1,6 @@
+#include <deque>
 #include <iostream>
+#include <queue>
 #include <sstream>
 #include <string>
 #include <sys/epoll.h>
@@ -83,4 +85,23 @@ int GetContentLength(std::string header)
 		}
 	}
 	return 0;
+}
+
+bool IsChunked(std::string header)
+{
+	std::string line;
+	std::stringstream ss_head(header);
+	while(std::getline(ss_head,line))
+	{
+		std::stringstream ss(line);
+		std::string param;
+		ss>>param;
+		if(param == "Transfer-Encoding:")
+		{
+			std::string val;
+			ss>>val;
+			return val == "chunked";
+		}
+	}
+	return false;
 }

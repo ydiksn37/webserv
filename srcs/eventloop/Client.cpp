@@ -1,10 +1,10 @@
 #include "Client.hpp"
-#include <cstddef>
+#include <cstdlib>
 #include <iostream>
 #include <ostream>
 #include <string>
 #include <unistd.h>
-#include "eventloop_int.hpp"
+#include "engine.hpp"
 
 bool endswith(std::string str, std::string suffix)
 {
@@ -13,7 +13,7 @@ bool endswith(std::string str, std::string suffix)
 	return str.substr(str.size()-suffix.size()) == suffix;
 }
 
-Client::Client(){}
+Client::Client(const Config& config):config_(config){}
 
 int Client::Read(int fd)
 {
@@ -24,37 +24,14 @@ int Client::Read(int fd)
 		client_.erase(fd);
 		return -1;
 	}
-	client_[fd].read_buffer.append(tmp_buffer,read_size);
+	client_[fd].request.parse(std::string(tmp_buffer,read_size));
 
-	while(true)
+	while(client_[fd].request.isCompleted())
 	{
-		if(!client_[fd].header_parsed)
-		{
-			size_t pos = client_[fd].read_buffer.find("\r\n\r\n");
-			if(pos == std::string::npos)
-				break;
-			client_[fd].header_parsed = true;
-			client_[fd].header_length = pos + 4;
-			client_[fd].body_length = GetContentLength(client_[fd].read_buffer.substr(0,client_[fd].header_length));
-		}
-		if(client_[fd].header_parsed)
-		{
-			unsigned total_length = client_[fd].header_length + client_[fd].body_length;
-			if(client_[fd].read_buffer.size() >= total_length)
-			{
-				std::string request = client_[fd].read_buffer.substr(0,total_length);
-				std::cout<<"\033[95m[READ]\033[0m "<<std::endl;
-				std::cout<<request<<std::endl;
-				client_[fd].write_buffer.append(Engine(request));
-				client_[fd].read_buffer.erase(0,total_length);
-				client_[fd].header_parsed = false;
-				client_[fd].header_length = 0;
-				client_[fd].body_length = 0;
-
-			}
-			else
-				break;
-		}
+		HttpResponse response = engine(config_, client_[fd].request);
+		client_[fd].write_buffer.append(response.serialize());
+		client_[fd].request.clear();
+		client_[fd].request.parse("");
 	}
 	return 0;
 }

@@ -5,10 +5,12 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 #include "eventloop_int.hpp"
+#include "Config.hpp"
 
-void EventLoop(Epoll& ep)
+void EventLoop(const Config& config)
 {
-	Client client;
+	Client client(config);
+	Epoll ep(config);
 
 	while(1)
 	{
@@ -40,18 +42,5 @@ void EventLoop(Epoll& ep)
 				}
 			}
 		}
-	}
-}
-
-int main()
-{
-	try {
-		Epoll ep;
-		ep.AddListener(8080);
-		ep.AddListener(8081);
-		EventLoop(ep);
-	} catch (const std::exception& e) {
-		std::cout<<e.what()<<std::endl;
-		return 1;
 	}
 }

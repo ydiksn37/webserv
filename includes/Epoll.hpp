@@ -3,11 +3,13 @@
 #include <set>
 #include <sys/epoll.h>
 #include <vector>
+#include "Config.hpp"
 
 class Epoll
 {
 	public:
 		Epoll();
+		Epoll(const Config& config);
 		~Epoll();
 		void AddListener(int port);
 		void Add(int fd,uint32_t events);
