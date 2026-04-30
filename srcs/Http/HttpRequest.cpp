@@ -125,7 +125,7 @@ static bool	parseChunkSize(const std::string &line, size_t &result)
 }
 
 HttpRequest::HttpRequest()
-	: _state(REQUEST_LINE), _method(""), _uri(""), _path(""), _query(""),
+	: _state(REQUEST_LINE), _routingResolved(false), _method(""), _uri(""), _path(""), _query(""),
 	  _version(""), _headers(), _body(""), _buffer(""), _empty(""), _chunkSize(0),
 	  _contentLength(0), _hasContentLength(false), _errorCode(0),
 	  _maxBodySize(1048576)
@@ -133,7 +133,7 @@ HttpRequest::HttpRequest()
 }
 
 HttpRequest::HttpRequest(const HttpRequest &other)
-	: _state(other._state), _method(other._method), _uri(other._uri),
+	: _state(other._state), _routingResolved(other._routingResolved), _method(other._method), _uri(other._uri),
 	  _path(other._path), _query(other._query), _version(other._version),
 	  _headers(other._headers), _body(other._body), _buffer(other._buffer),
 	  _empty(other._empty), _chunkSize(other._chunkSize),
@@ -148,6 +148,7 @@ HttpRequest&	HttpRequest::operator=(const HttpRequest &other)
 	if (this != &other)
 	{
 		this->_state = other._state;
+		this->_routingResolved = other._routingResolved;
 		this->_method = other._method;
 		this->_uri = other._uri;
 		this->_path = other._path;
@@ -305,10 +306,14 @@ void	HttpRequest::parse(const std::string &raw_data)
 
 bool	HttpRequest::isCompleted() const { return (this->_state == COMPLETE); }
 bool	HttpRequest::isError() const { return (this->_state == ERROR); }
+bool	HttpRequest::isHeaderFinished() const { return (this->_state == BODY || this->_state == CHUNKED_BODY || this->_state == TRAILERS || this->_state == COMPLETE || this->_state == ERROR); }
+bool	HttpRequest::isRoutingResolved() const { return (this->_routingResolved); }
+void	HttpRequest::setRoutingResolved(bool resolved) { this->_routingResolved = resolved; }
 
 void	HttpRequest::clear()
 {
 	this->_state = REQUEST_LINE;
+	this->_routingResolved = false;
 	this->_method.clear();
 	this->_uri.clear();
 	this->_path.clear();
@@ -316,7 +321,6 @@ void	HttpRequest::clear()
 	this->_version.clear();
 	this->_headers.clear();
 	this->_body.clear();
-	this->_buffer.clear();
 	this->_chunkSize = 0;
 	this->_contentLength = 0;
 	this->_hasContentLength = false;
@@ -329,6 +333,7 @@ const std::string&	HttpRequest::getPath() const { return (this->_path); }
 const std::string&	HttpRequest::getQuery() const { return (this->_query); }
 const std::string&	HttpRequest::getVersion() const { return (this->_version); }
 const std::string&	HttpRequest::getBody() const { return (this->_body); }
+size_t				HttpRequest::getContentLength() const { return (this->_contentLength); }
 int					HttpRequest::getErrorCode() const { return (this->_errorCode); }
 
 void	HttpRequest::setMaxBodySize(size_t max) { this->_maxBodySize = max; }
