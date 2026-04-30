@@ -5,6 +5,7 @@
 # include <string>
 # include <map>
 # include <vector>
+# include "Config.hpp"
 
 // HTTPリクエストを解析・保持するクラス
 class HttpRequest
@@ -31,9 +32,13 @@ class HttpRequest
 		const std::map<std::string, std::string>&	getHeaders() const;
 		const std::string&	getBody() const;
 		int					getErrorCode() const;
+		bool				isHeaderFinished() const;
+		bool				isRoutingResolved() const;
+		size_t				getContentLength() const;
 
 		// Setter
 		void				setMaxBodySize(size_t max);
+		void				setRoutingResolved(bool resolved);
 
 		// 検証用
 		bool				isMethodAllowed(const std::vector<std::string>& allowedMethods) const;
@@ -51,6 +56,7 @@ class HttpRequest
 		};
 
 		ParsingState						_state;
+		bool								_routingResolved;
 		std::string							_method;
 		std::string							_uri;
 		std::string							_path;
