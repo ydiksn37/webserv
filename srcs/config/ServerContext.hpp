@@ -1,23 +1,14 @@
 #ifndef SERVERCONTEXT_HPP
 # define SERVERCONTEXT_HPP
 
+# include "LocationContext.hpp"
 # include <iostream>
 # include <string>
 # include <vector>
 # include <map>
 # include <set>
-# include "LocationContext.hpp"
 
 class ServerContext {
-	private:
-		int														_port;
-		std::set<std::string>					_server_names;
-		size_t												_client_max_body_size;
-		std::map<int, std::string>		_error_pages;
-		std::string										_root;
-		std::vector<std::string>			_index;
-		std::vector<LocationContext>	_locations;
-
 	public:
 		ServerContext();
 		~ServerContext();
@@ -43,6 +34,15 @@ class ServerContext {
 		const std::vector<LocationContext>&	getLocations() const;
 
 		void validate() const;
+
+	private:
+		int														_port;
+		std::set<std::string>					_server_names;
+		size_t												_client_max_body_size;
+		std::map<int, std::string>		_error_pages;
+		std::string										_root;
+		std::vector<std::string>			_index;
+		std::vector<LocationContext>	_locations;
 };
 
 #endif
