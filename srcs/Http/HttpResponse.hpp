@@ -4,16 +4,13 @@
 # include <string>
 # include <map>
 
-class HttpResponse
-{
+class HttpResponse {
 	public:
-		// Constructors & Destructor & Overloaded Operator
 		HttpResponse();
 		HttpResponse(const HttpResponse& other);
 		HttpResponse&	operator=(const HttpResponse& other);
 		~HttpResponse();
 
-		// Setters
 		void			setStatusCode(int code);
 		void			setReasonPhrase(const std::string& phrase);
 		void			setHeader(const std::string& key, const std::string& value);
@@ -22,22 +19,21 @@ class HttpResponse
 		void			setHttpVersion(const std::string& version);
 		void			setRedirect(int code, const std::string& location);
 
-		// Getter
 		const std::map<std::string, std::string>&	getHeaders() const;
-		std::string									serialize() const;
+		std::string																serialize() const;
 
 	private:
-		std::string							_version;
-		int									_statusCode;
-		std::string							_reasonPhrase;
+		std::string													_version;
+		int																	_statusCode;
+		std::string													_reasonPhrase;
 		std::map<std::string, std::string>	_headers;
-		std::string							_body;
+		std::string													_body;
 
 		static std::map<int, std::string>	_initStatusMessages();
-		std::string							_getStatusMessage(int code) const;
-		std::string							_getCurrentDate() const;
-		std::string							_normalizeHeaderKey(const std::string& key) const;
-		std::string							_generateDefaultErrorPage(int code) const;
+		std::string												_getStatusMessage(int code) const;
+		std::string												_getCurrentDate() const;
+		std::string												_normalizeHeaderKey(const std::string& key) const;
+		std::string												_generateDefaultErrorPage(int code) const;
 
 	public:
 		static std::string					generateDirectoryListing(const std::string& path, const std::string& uri);
