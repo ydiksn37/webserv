@@ -1,4 +1,4 @@
-#include "../../includes/Config.hpp"
+#include "Config.hpp"
 
 Config::Config() : _servers() {}
 
@@ -41,7 +41,8 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 					throw ConfigException("Error: Invalid listen format.");
 				}
 				port = parseLong(port_str);
-			} else {
+			}
+			else {
 				port = parseLong(listen_val);
 			}
 			if (port <= 0 || port > 65535) {

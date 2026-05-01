@@ -1,6 +1,7 @@
 #ifndef CONFIG_HPP
 # define CONFIG_HPP
 
+# include "ServerContext.hpp"
 # include <iostream>
 # include <string>
 # include <vector>
@@ -10,17 +11,8 @@
 # include <stdexcept>
 # include <cctype>
 # include <cerrno>
-# include "../srcs/config/ServerContext.hpp"
 
 class Config {
-	private:
-		std::vector<ServerContext>	_servers;
-		void					parseServerBlock(const std::vector<std::string>& tokens, size_t& i);
-		void					parseLocationBlock(const std::vector<std::string>& tokens, size_t& i, ServerContext& server);
-		void					validateConfiguration() const;
-		long					parseLong(const std::string& str) const;
-		unsigned long	parseUnsignedLong(const std::string& str) const;
-
 	public:
 		Config();
 		~Config();
@@ -38,6 +30,14 @@ class Config {
 			public:
 				ConfigException(const std::string& msg) : std::runtime_error(msg) {}
 		};
+
+		private:
+			std::vector<ServerContext>	_servers;
+			void					parseServerBlock(const std::vector<std::string>& tokens, size_t& i);
+			void					parseLocationBlock(const std::vector<std::string>& tokens, size_t& i, ServerContext& server);
+			void					validateConfiguration() const;
+			long					parseLong(const std::string& str) const;
+			unsigned long	parseUnsignedLong(const std::string& str) const;
 };
 
 #endif
