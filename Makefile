@@ -66,6 +66,9 @@ run: all
 	@$(MAKE) $(MAKE_FLAGS) clean -s
 	@./$(NAME) default.conf
 
+test:
+	@$(MAKE) $(MAKE_FLAGS) -C unit_test run
+
 -include $(DEPS)
 
-.PHONY: all clean fclean re run format
+.PHONY: all clean fclean re run test format
