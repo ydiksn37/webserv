@@ -155,6 +155,7 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 
 	LocationContext location(tokens[i]);
 	bool index_specified = false;
+	bool methods_specified = false;
 
 	location.setRoot(server.getRoot());
 	const std::vector<std::string>& parent_index = server.getIndex();
@@ -177,6 +178,10 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 			i++;
 			if (i >= tokens.size() || tokens[i] == ";") {
 				throw ConfigException("Error: allow_methods requires at least one argument.");
+			}
+			if (!methods_specified) {
+				location.clearAllowedMethods();
+				methods_specified = true;
 			}
 			while (i < tokens.size() && tokens[i] != ";") {
 				if (tokens[i] != "GET" && tokens[i] != "POST" && tokens[i] != "DELETE") {

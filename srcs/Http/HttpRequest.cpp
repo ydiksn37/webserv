@@ -281,7 +281,13 @@ size_t				HttpRequest::getContentLength() const { return (this->_contentLength);
 
 int					HttpRequest::getErrorCode() const { return (this->_errorCode); }
 
-void	HttpRequest::setMaxBodySize(size_t max) { this->_maxBodySize = max; }
+void	HttpRequest::setMaxBodySize(size_t max) {
+	this->_maxBodySize = max;
+	if ((this->_hasContentLength && this->_contentLength > this->_maxBodySize)
+		|| this->_body.length() > this->_maxBodySize) {
+		this->_setError(413);
+	}
+}
 
 bool	HttpRequest::isMethodAllowed(const std::vector<std::string>& allowedMethods) const {
 	for (size_t i = 0; i < allowedMethods.size(); ++i) {

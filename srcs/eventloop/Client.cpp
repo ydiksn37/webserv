@@ -7,11 +7,25 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <cctype>
+#include <sstream>
 
 bool endswith(std::string str, std::string suffix) {
 	if(str.size() < suffix.size())
 		return false;
 	return str.substr(str.size() - suffix.size()) == suffix;
+}
+
+static std::string toLowerString(std::string str) {
+	for (size_t i = 0; i < str.length(); ++i)
+		str[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(str[i])));
+	return str;
+}
+
+static std::string sizeToString(size_t size) {
+	std::stringstream ss;
+	ss << size;
+	return ss.str();
 }
 
 Client::Client(const Config& config):config_(config) {}
@@ -42,7 +56,14 @@ int Client::Read(int fd, std::vector<PipeInfo>& new_pipes) {
 	}
 	client_[fd].request.parse(std::string(tmp_buffer,read_size));
 
-	while(client_[fd].request.isCompleted() && !client_[fd].is_waiting_cgi) {
+	if (client_[fd].request.isHeaderFinished()
+		&& !client_[fd].request.isRoutingResolved()
+		&& !client_[fd].request.isCompleted()
+		&& !client_[fd].request.isError()) {
+		engine(config_, client_[fd].request, client_[fd].local_port);
+	}
+
+	while((client_[fd].request.isCompleted() || client_[fd].request.isError()) && !client_[fd].is_waiting_cgi) {
 		std::cerr << "[Debug] Processing request: " << client_[fd].request.getMethod() << " " << client_[fd].request.getPath() << " on port " << client_[fd].local_port << std::endl;
 		EngineResult res = engine(config_, client_[fd].request, client_[fd].local_port);
 
@@ -116,46 +137,73 @@ bool Client::WriteEnd(int fd) {
 	return false;
 }
 
-int Client::ReadCgi(int pipe_fd) {
+int Client::ReadCgi(int pipe_fd, bool closed_event) {
 	if (!pipe_to_client_.count(pipe_fd)) return -1;
 	int client_fd = pipe_to_client_[pipe_fd];
 	char buffer[buffer_size];
-	int read_size = read(pipe_fd, buffer, buffer_size);
+	bool reached_eof = false;
 
+	int read_size = read(pipe_fd, buffer, buffer_size);
 	if (read_size > 0) {
 		client_[client_fd].cgi_output.append(buffer, read_size);
+		if (!closed_event)
+			return 0;
+		while ((read_size = read(pipe_fd, buffer, buffer_size)) > 0) {
+			client_[client_fd].cgi_output.append(buffer, read_size);
+		}
+	}
+	if (read_size == 0) {
+		reached_eof = true;
+	}
+	if (!reached_eof && !closed_event)
 		return 0;
+
+	std::string status_line = "200 OK";
+	size_t status_pos = client_[client_fd].cgi_output.find("Status: ");
+	if (status_pos != std::string::npos) {
+		size_t end_of_line = client_[client_fd].cgi_output.find("\n", status_pos);
+		if (end_of_line != std::string::npos) {
+			status_line = client_[client_fd].cgi_output.substr(status_pos + 8, end_of_line - (status_pos + 8));
+			if (!status_line.empty() && status_line[status_line.length() - 1] == '\r')
+				status_line.erase(status_line.length() - 1);
+			client_[client_fd].cgi_output.erase(status_pos, end_of_line + 1 - status_pos);
+		}
+	}
+
+	client_[client_fd].write_buffer.append("HTTP/1.1 " + status_line + "\r\n");
+	size_t header_end = client_[client_fd].cgi_output.find("\r\n\r\n");
+	size_t separator_len = 4;
+	if (header_end == std::string::npos) {
+		header_end = client_[client_fd].cgi_output.find("\n\n");
+		separator_len = 2;
+	}
+	if (header_end != std::string::npos) {
+		std::string headers = client_[client_fd].cgi_output.substr(0, header_end);
+		std::string body = client_[client_fd].cgi_output.substr(header_end + separator_len);
+		client_[client_fd].write_buffer.append(headers + "\r\n");
+		if (toLowerString(headers).find("content-length:") == std::string::npos)
+			client_[client_fd].write_buffer.append("Content-Length: " + sizeToString(body.length()) + "\r\n");
+		client_[client_fd].write_buffer.append("\r\n");
+		client_[client_fd].write_buffer.append(body);
 	}
 	else {
-		std::string status_line = "200 OK";
-		size_t status_pos = client_[client_fd].cgi_output.find("Status: ");
-		if (status_pos != std::string::npos) {
-			size_t end_of_line = client_[client_fd].cgi_output.find("\n", status_pos);
-			if (end_of_line != std::string::npos) {
-				status_line = client_[client_fd].cgi_output.substr(status_pos + 8, end_of_line - (status_pos + 8));
-				if (!status_line.empty() && status_line[status_line.length() - 1] == '\r')
-					status_line.erase(status_line.length() - 1);
-				client_[client_fd].cgi_output.erase(status_pos, end_of_line + 1 - status_pos);
-			}
-		}
-
-		client_[client_fd].write_buffer.append("HTTP/1.1 " + status_line + "\r\n");
+		client_[client_fd].write_buffer.append("Content-Length: " + sizeToString(client_[client_fd].cgi_output.length()) + "\r\n");
+		client_[client_fd].write_buffer.append("Content-Type: text/plain\r\n\r\n");
 		client_[client_fd].write_buffer.append(client_[client_fd].cgi_output);
-		client_[client_fd].is_waiting_cgi = false;
-		pipe_to_client_.erase(pipe_fd);
-		client_[client_fd].cgi_read_fd = -1;
-		if (client_[client_fd].cgi_pid != -1) {
-			int status;
-			if (waitpid(client_[client_fd].cgi_pid, &status, WNOHANG) > 0) {
-				if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
-					// CGIがエラーで終了した場合はログ出力など（必要に応じて500エラーに変更）
-					std::cerr << "[CGI Error] PID " << client_[client_fd].cgi_pid << " exited with " << WEXITSTATUS(status) << std::endl;
-				}
-			}
-			client_[client_fd].cgi_pid = -1;
-		}
-		return 1;
 	}
+	client_[client_fd].is_waiting_cgi = false;
+	pipe_to_client_.erase(pipe_fd);
+	client_[client_fd].cgi_read_fd = -1;
+	if (client_[client_fd].cgi_pid != -1) {
+		int status;
+		if (waitpid(client_[client_fd].cgi_pid, &status, WNOHANG) > 0) {
+			if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+				std::cerr << "[CGI Error] PID " << client_[client_fd].cgi_pid << " exited with " << WEXITSTATUS(status) << std::endl;
+			}
+		}
+		client_[client_fd].cgi_pid = -1;
+	}
+	return 1;
 }
 
 int Client::WriteCgi(int pipe_fd) {

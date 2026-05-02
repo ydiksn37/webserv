@@ -84,6 +84,10 @@ void LocationContext::setAllowedMethod(const std::string& method) {
 	}
 }
 
+void LocationContext::clearAllowedMethods() {
+	this->_allowed_methods = 0;
+}
+
 void LocationContext::setRoot(const std::string& root) {
 	this->_root = root;
 }

@@ -22,7 +22,7 @@ class Client {
 		void Write(int fd);
 		bool WriteBegin(int fd);
 		bool WriteEnd(int fd);
-		int  ReadCgi(int pipe_fd);
+		int  ReadCgi(int pipe_fd, bool closed_event);
 		int  WriteCgi(int pipe_fd);
 		int  GetClientFdFromPipe(int pipe_fd);
 		std::vector<int> HandleCgiTimeout();

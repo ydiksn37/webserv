@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <fstream>
 
 struct RouteContext {
 	const ServerContext		*server;
@@ -38,8 +39,13 @@ static void	applyErrorPage(HttpResponse &response, int code, const LocationConte
 
 	if (error_pages != NULL) {
 		std::map<int, std::string>::const_iterator it = error_pages->find(code);
-		if (it != error_pages->end())
-			response.setBodyFromFile(it->second);
+		if (it != error_pages->end()) {
+			struct stat st;
+			std::ifstream file(it->second.c_str(), std::ios::binary);
+
+			if (stat(it->second.c_str(), &st) == 0 && !S_ISDIR(st.st_mode) && file.is_open())
+				response.setBodyFromFile(it->second);
+		}
 	}
 }
 

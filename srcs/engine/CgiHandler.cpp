@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <utility>
+#include <limits.h>
 
 CgiHandler::CgiHandler() : _pid(-1) {
 	_pipe_in[0] = -1;
@@ -87,6 +88,10 @@ std::pair<int, int> CgiHandler::execute(const HttpRequest& request,
 								const std::string& script_path,
 								const std::string& bin_path) {
 	if (pipe(_pipe_in) < 0 || pipe(_pipe_out) < 0) {
+		if (_pipe_in[0] != -1) close(_pipe_in[0]);
+		if (_pipe_in[1] != -1) close(_pipe_in[1]);
+		_pipe_in[0] = -1;
+		_pipe_in[1] = -1;
 		return std::make_pair(-1, -1);
 	}
 
@@ -94,6 +99,14 @@ std::pair<int, int> CgiHandler::execute(const HttpRequest& request,
 
 	_pid = fork();
 	if (_pid < 0) {
+		close(_pipe_in[0]);
+		close(_pipe_in[1]);
+		close(_pipe_out[0]);
+		close(_pipe_out[1]);
+		_pipe_in[0] = -1;
+		_pipe_in[1] = -1;
+		_pipe_out[0] = -1;
+		_pipe_out[1] = -1;
 		return std::make_pair(-1, -1);
 	}
 
@@ -107,11 +120,13 @@ std::pair<int, int> CgiHandler::execute(const HttpRequest& request,
 		close(_pipe_out[1]);
 
 		size_t last_slash = script_path.find_last_of('/');
+		std::string script_arg = script_path;
 		if (last_slash != std::string::npos) {
 			chdir(script_path.substr(0, last_slash).c_str());
+			script_arg = script_path.substr(last_slash + 1);
 		}
 
-		char** argv = _getArgv(bin_path, script_path);
+		char** argv = _getArgv(bin_path, script_arg);
 		char** envp = _getEnvp();
 
 		execve(argv[0], argv, envp);
@@ -126,7 +141,11 @@ std::pair<int, int> CgiHandler::execute(const HttpRequest& request,
 	fcntl(_pipe_in[1], F_SETFL, O_NONBLOCK);
 	fcntl(_pipe_out[0], F_SETFL, O_NONBLOCK);
 
-	return std::make_pair(_pipe_out[0], _pipe_in[1]);
+	int read_fd = _pipe_out[0];
+	int write_fd = _pipe_in[1];
+	_pipe_out[0] = -1;
+	_pipe_in[1] = -1;
+	return std::make_pair(read_fd, write_fd);
 }
 
 pid_t CgiHandler::getPid() const {

@@ -33,8 +33,9 @@ void EventLoop(const Config& config) {
 				if (client_fd != -1) {
 					// CGIパイプのI/O処理
 					bool closed = false;
-					if (events[i].events & EPOLLIN) {
-						if (client.ReadCgi(fd) == 1) {
+					if (events[i].events & (EPOLLIN | EPOLLHUP | EPOLLERR)) {
+						bool closed_event = events[i].events & (EPOLLHUP | EPOLLERR);
+						if (client.ReadCgi(fd, closed_event) == 1) {
 							ep.Del(fd);
 							closed = true;
 						}
