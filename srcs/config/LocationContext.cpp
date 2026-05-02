@@ -208,9 +208,6 @@ const std::map<int, std::string>& LocationContext::getErrorPages() const {
 }
 
 void LocationContext::validate() const {
-	if (this->_redirect_code != 0 && (!this->_root.empty() || !this->_alias.empty())) {
-		throw std::runtime_error("Conflict: 'return' directive cannot be used with 'root' or 'alias' in location " + this->_path);
-	}
 	if (this->_autoindex && !this->_cgi_info.empty()) {
 		throw std::runtime_error("Conflict: 'autoindex' and 'cgi' cannot both be active in location " + this->_path);
 	}

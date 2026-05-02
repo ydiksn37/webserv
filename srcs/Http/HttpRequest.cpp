@@ -41,6 +41,10 @@ static bool	isValidMethod(const std::string &method) {
 	return (true);
 }
 
+static bool	isImplementedMethod(const std::string &method) {
+	return (method == "GET" || method == "POST" || method == "DELETE");
+}
+
 static bool	isSupportedTransferEncoding(const std::string &value) {
 	std::string	normalized;
 
@@ -89,6 +93,25 @@ static bool	parseChunkSize(const std::string &line, size_t &result) {
 		}
 	}
 	return (true);
+}
+
+static bool	hasBalancedDquotes(const std::string &value) {
+	bool	escaped = false;
+	bool	in_quote = false;
+
+	for (size_t i = 0; i < value.length(); ++i) {
+		if (escaped) {
+			escaped = false;
+			continue ;
+		}
+		if (value[i] == '\\') {
+			escaped = true;
+			continue ;
+		}
+		if (value[i] == '"')
+			in_quote = !in_quote;
+	}
+	return (!in_quote);
 }
 
 HttpRequest::HttpRequest()
@@ -311,19 +334,37 @@ const std::map<std::string, std::string>&	HttpRequest::getHeaders() const {
 }
 
 void	HttpRequest::_parseRequestLine(std::string& line) {
-	std::stringstream	ss(line);
-	std::string			extra;
+	size_t	first_space;
+	size_t	second_space;
 
-	if (!(ss >> this->_method >> this->_uri >> this->_version)) {
+	first_space = line.find(' ');
+	if (first_space == std::string::npos || first_space == 0) {
 		this->_setError(400);
 		return ;
 	}
-	if (ss >> extra) {
+	second_space = line.find(' ', first_space + 1);
+	if (second_space == std::string::npos || second_space == first_space + 1) {
 		this->_setError(400);
 		return ;
 	}
+	if (line.find(' ', second_space + 1) != std::string::npos
+		|| second_space == line.length() - 1) {
+		this->_setError(400);
+		return ;
+	}
+	if (line.find('\t') != std::string::npos) {
+		this->_setError(400);
+		return ;
+	}
+	this->_method = line.substr(0, first_space);
+	this->_uri = line.substr(first_space + 1, second_space - first_space - 1);
+	this->_version = line.substr(second_space + 1);
 	if (!isValidMethod(this->_method)) {
 		this->_setError(400);
+		return ;
+	}
+	if (!isImplementedMethod(this->_method)) {
+		this->_setError(501);
 		return ;
 	}
 	if (this->_version != "HTTP/1.1" && this->_version != "HTTP/1.0") {
@@ -354,6 +395,7 @@ void	HttpRequest::_parseRequestLine(std::string& line) {
 void	HttpRequest::_parseHeader(std::string& line) {
 	size_t		colon;
 	std::string	key;
+	std::string	rawKey;
 	std::string	value;
 
 	if (line.empty()) {
@@ -385,13 +427,22 @@ void	HttpRequest::_parseHeader(std::string& line) {
 		this->_setError(400);
 		return ;
 	}
-	key = ::toLower(::trim(line.substr(0, colon)));
+	rawKey = line.substr(0, colon);
+	if (rawKey.find_first_of(" \t") != std::string::npos) {
+		this->_setError(400);
+		return ;
+	}
+	key = ::toLower(rawKey);
 	value = ::trim(line.substr(colon + 1));
 	for (size_t i = 0; i < key.length(); ++i) {
 		if (!isTokenChar(key[i])) {
 			this->_setError(400);
 			return ;
 		}
+	}
+	if (!hasBalancedDquotes(value)) {
+		this->_setError(400);
+		return ;
 	}
 	if (key == "content-length") {
 		size_t	contentLength;
@@ -408,6 +459,13 @@ void	HttpRequest::_parseHeader(std::string& line) {
 		this->_contentLength = contentLength;
 		this->_headers[key] = value;
 		return ;
+	}
+	if (key == "host") {
+		if (this->_headers.count(key) || value.empty()
+			|| value.find(',') != std::string::npos) {
+			this->_setError(400);
+			return ;
+		}
 	}
 	if (this->_headers.count(key)) {
 		this->_headers[key] += ", " + value;
