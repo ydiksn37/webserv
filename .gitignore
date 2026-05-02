@@ -7,3 +7,5 @@ compile_commands.json
 compile_flags.txt
 unit_test/run_engine_tests
 42-webserv
+run_config_tests
+run_http_tests
