@@ -24,8 +24,7 @@ Client::ClientData::ClientData()
       cgi_start_time(0), local_port(0), should_close(false) {}
 
 void Client::SetLocalPort(int fd, int port) {
-	if (client_.count(fd))
-		client_[fd].local_port = port;
+	client_[fd].local_port = port;
 }
 
 bool Client::ShouldClose(int fd) {
