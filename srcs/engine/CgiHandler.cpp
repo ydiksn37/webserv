@@ -35,6 +35,12 @@ void CgiHandler::_setupEnv(const HttpRequest& request,
 								const std::string& script_path) {
 	(void)location;
 
+	char abs_path[PATH_MAX];
+	std::string final_path = script_path;
+	if (realpath(script_path.c_str(), abs_path)) {
+		final_path = abs_path;
+	}
+
 	_env["REQUEST_METHOD"] = request.getMethod();
 	_env["QUERY_STRING"] = request.getQuery();
 	_env["CONTENT_LENGTH"] = sizeToStr(request.getBody().length());
@@ -50,7 +56,7 @@ void CgiHandler::_setupEnv(const HttpRequest& request,
 	_env["GATEWAY_INTERFACE"] = "CGI/1.1";
 	_env["REMOTE_ADDR"] = "";
 	_env["REDIRECT_STATUS"] = "200";
-	_env["SCRIPT_FILENAME"] = script_path;
+	_env["SCRIPT_FILENAME"] = final_path;
 
 	const std::map<std::string, std::string>& headers = request.getHeaders();
 	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
