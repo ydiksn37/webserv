@@ -107,6 +107,24 @@ static void test_LoadCgiConf() {
     passTest();
 }
 
+static void test_LoadTestConfUploadReachable() {
+    beginTest("LoadTestConfUploadReachable");
+    Config cfg;
+    cfg.loadFile("../configurations/test.conf");
+    EXPECT_EQ(cfg.getServers().size(), (size_t)1);
+
+    const ServerContext* s = cfg.getServer(8080, "localhost");
+    EXPECT_TRUE(s != NULL);
+    const LocationContext* upload = cfg.matchLocation(s, "/upload/file.txt");
+    EXPECT_TRUE(upload != NULL);
+    EXPECT_STREQ(upload->getPath(), "/upload");
+    EXPECT_TRUE(upload->getIsMethodAllowed("POST"));
+    EXPECT_TRUE(upload->getIsMethodAllowed("DELETE"));
+    EXPECT_TRUE(upload->getUploadEnable());
+    EXPECT_STREQ(upload->getUploadStore(), "test/www/upload");
+    passTest();
+}
+
 static void test_LoadListenIpPort() {
     beginTest("LoadListenIpPort");
     Config cfg;
@@ -435,6 +453,7 @@ int main() {
     RUN_TEST(test_LoadMultipleServers);
     RUN_TEST(test_LoadServerWithAllDirectives);
     RUN_TEST(test_LoadCgiConf);
+    RUN_TEST(test_LoadTestConfUploadReachable);
     RUN_TEST(test_LoadListenIpPort);
     RUN_TEST(test_TokenizeComment);
     RUN_TEST(test_ClientMaxBodySizeWithSuffix);

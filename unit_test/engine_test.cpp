@@ -133,6 +133,17 @@ static void test_CgiRouteDetectedByExtension() {
     passTest();
 }
 
+static void test_CgiMissingScriptReturns404() {
+    beginTest("CgiMissingScriptReturns404");
+    Config cfg = loadEngineConfig();
+    EngineResult result = runEngine(cfg, "GET /cgi-bin/missing.py HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    std::string res = result.response.serialize();
+    EXPECT_FALSE(result.is_cgi);
+    EXPECT_TRUE(res.find("HTTP/1.1 404 Not Found\r\n") == 0);
+    EXPECT_TRUE(res.find("\r\n\r\nCustom 404\n") != std::string::npos);
+    passTest();
+}
+
 int main() {
     std::cout << YELLOW << "\n=== Engine Unit Tests ===" << RESET << std::endl;
 
@@ -145,6 +156,7 @@ int main() {
     RUN_TEST(test_UploadPostCreatesFile);
     RUN_TEST(test_DeleteRemovesFile);
     RUN_TEST(test_CgiRouteDetectedByExtension);
+    RUN_TEST(test_CgiMissingScriptReturns404);
 
     return testSummary();
 }

@@ -28,6 +28,13 @@ static bool isDirectory(const std::string& path) {
 	return S_ISDIR(buffer.st_mode);
 }
 
+static bool isRegularFile(const std::string& path) {
+	struct stat buffer;
+	if (stat(path.c_str(), &buffer) != 0)
+		return false;
+	return S_ISREG(buffer.st_mode);
+}
+
 static void	applyErrorPage(HttpResponse &response, int code, const LocationContext *location, const ServerContext *server) {
 	response.setStatusCode(code);
 	const std::map<int, std::string> *error_pages = NULL;
@@ -282,9 +289,18 @@ EngineResult	dispatchMethod(const HttpRequest &request, const ServerContext &ser
 	result.location = &location;
 
 	if (isCgi(request, location, bin_path)) {
+		std::string script_path = resolveScriptPath(request, location, server);
+		if (!fileExists(script_path)) {
+			applyErrorPage(result.response, 404, &location, &server);
+			return result;
+		}
+		if (!isRegularFile(script_path) || access(script_path.c_str(), R_OK) != 0) {
+			applyErrorPage(result.response, 403, &location, &server);
+			return result;
+		}
 		result.is_cgi = true;
 		result.bin_path = bin_path;
-		result.script_path = resolveScriptPath(request, location, server);
+		result.script_path = script_path;
 		return result;
 	}
 
