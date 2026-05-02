@@ -46,7 +46,7 @@ HttpResponse&	HttpResponse::operator=(const HttpResponse& other) {
 
 HttpResponse::~HttpResponse() {}
 
-std::map<int, std::string>	HttpResponse::_initStatusMessages() {
+std::map<int, std::string>		HttpResponse::_initStatusMessages() {
 	std::map<int, std::string>	m;
 
 	m[100] = "Continue";
@@ -172,7 +172,7 @@ std::string	HttpResponse::serialize() const {
 }
 
 std::string	HttpResponse::_getStatusMessage(int code) const {
-	static std::map<int, std::string>			m = _initStatusMessages();
+	static std::map<int, std::string>						m = _initStatusMessages();
 	std::map<int, std::string>::const_iterator	it;
 
 	it = m.find(code);
@@ -184,7 +184,7 @@ std::string	HttpResponse::_getStatusMessage(int code) const {
 std::string	HttpResponse::_getCurrentDate() const {
 	time_t		now;
 	struct tm	*tm;
-	char		buf[100];
+	char			buf[100];
 
 	now = time(0);
 	tm = gmtime(&now);
@@ -194,7 +194,7 @@ std::string	HttpResponse::_getCurrentDate() const {
 
 std::string	HttpResponse::_normalizeHeaderKey(const std::string& key) const {
 	std::string	normalized;
-	bool		capitalize_next;
+	bool				capitalize_next;
 
 	normalized = key;
 	capitalize_next = true;
@@ -215,7 +215,7 @@ std::string	HttpResponse::_normalizeHeaderKey(const std::string& key) const {
 std::string	HttpResponse::_generateDefaultErrorPage(int code) const
 {
 	std::stringstream	ss;
-	std::string			message;
+	std::string				message;
 
 	message = this->_getStatusMessage(code);
 	ss << "<html>\r\n";
@@ -231,9 +231,9 @@ std::string	HttpResponse::_generateDefaultErrorPage(int code) const
 std::string	HttpResponse::generateDirectoryListing(const std::string& path, const std::string& uri)
 {
 	std::stringstream	ss;
-	DIR					*dir;
-	struct dirent		*entry;
-	std::string			baseUri;
+	DIR								*dir;
+	struct dirent			*entry;
+	std::string				baseUri;
 
 	dir = opendir(path.c_str());
 	if (dir == NULL)
