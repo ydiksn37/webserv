@@ -155,6 +155,10 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 
 	LocationContext location(tokens[i]);
 	bool index_specified = false;
+	bool allowed_methods_specified = false;
+	bool location_root_specified = false;
+	bool alias_specified = false;
+	bool redirect_specified = false;
 
 	location.setRoot(server.getRoot());
 	const std::vector<std::string>& parent_index = server.getIndex();
@@ -178,6 +182,10 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 			if (i >= tokens.size() || tokens[i] == ";") {
 				throw ConfigException("Error: allow_methods requires at least one argument.");
 			}
+			if (!allowed_methods_specified) {
+				location.clearAllowedMethods();
+				allowed_methods_specified = true;
+			}
 			while (i < tokens.size() && tokens[i] != ";") {
 				if (tokens[i] != "GET" && tokens[i] != "POST" && tokens[i] != "DELETE") {
 					throw ConfigException("Error: Invalid or unsupported HTTP method '" + tokens[i] + "' in allow_methods.");
@@ -192,6 +200,7 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 				throw ConfigException("Error: root requires an argument.");
 			}
 			location.setRoot(tokens[i]);
+			location_root_specified = true;
 			i++;
 		}
 		else if (tokens[i] == "alias") {
@@ -200,6 +209,7 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 				throw ConfigException("Error: alias requires an argument.");
 			}
 			location.setAlias(tokens[i]);
+			alias_specified = true;
 			i++;
 		}
 		else if (tokens[i] == "index") {
@@ -241,6 +251,7 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 				throw ConfigException("Error: return requires a URL.");
 			}
 			location.setRedirect(code, tokens[i]);
+			redirect_specified = true;
 			i++;
 		}
 		else if (tokens[i] == "upload_enable") {
@@ -330,6 +341,9 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 		}
 	}
 	if (i < tokens.size() && tokens[i] == "}") {
+		if (redirect_specified && (location_root_specified || alias_specified)) {
+			throw ConfigException("Error: 'return' directive cannot be used with explicit 'root' or 'alias'.");
+		}
 		server.setLocation(location);
 		return;
 	}

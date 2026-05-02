@@ -28,7 +28,7 @@ inline void failTest(const std::string& msg) {
     g_test_failed++;
 }
 
-# define RUN_TEST(name) do { beginTest(#name); name(); } while (0)
+# define RUN_TEST(name) do { name(); } while (0)
 
 # define EXPECT_TRUE(cond) do { \
     if (!(cond)) { \

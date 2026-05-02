@@ -107,6 +107,75 @@ static void test_LoadCgiConf() {
     passTest();
 }
 
+static void test_LoadListenIpPort() {
+    beginTest("LoadListenIpPort");
+    Config cfg;
+    cfg.loadFile("conf/listen_ip_port.conf");
+    EXPECT_EQ(cfg.getServers().size(), (size_t)1);
+    EXPECT_EQ(cfg.getServers()[0].getPort(), 8123);
+    passTest();
+}
+
+static void test_LoadInvalidAllowMethod() {
+    beginTest("LoadInvalidAllowMethod");
+    Config cfg;
+    bool threw = false;
+    try { cfg.loadFile("conf/invalid_allow_method.conf"); }
+    catch (const std::exception&) { threw = true; }
+    EXPECT_TRUE(threw);
+    passTest();
+}
+
+static void test_LoadInvalidAutoindex() {
+    beginTest("LoadInvalidAutoindex");
+    Config cfg;
+    bool threw = false;
+    try { cfg.loadFile("conf/invalid_autoindex.conf"); }
+    catch (const std::exception&) { threw = true; }
+    EXPECT_TRUE(threw);
+    passTest();
+}
+
+static void test_LoadInvalidUploadEnable() {
+    beginTest("LoadInvalidUploadEnable");
+    Config cfg;
+    bool threw = false;
+    try { cfg.loadFile("conf/invalid_upload_enable.conf"); }
+    catch (const std::exception&) { threw = true; }
+    EXPECT_TRUE(threw);
+    passTest();
+}
+
+static void test_LoadInvalidCgiExtension() {
+    beginTest("LoadInvalidCgiExtension");
+    Config cfg;
+    bool threw = false;
+    try { cfg.loadFile("conf/invalid_cgi_extension.conf"); }
+    catch (const std::exception&) { threw = true; }
+    EXPECT_TRUE(threw);
+    passTest();
+}
+
+static void test_LoadConflictRedirectRoot() {
+    beginTest("LoadConflictRedirectRoot");
+    Config cfg;
+    bool threw = false;
+    try { cfg.loadFile("conf/conflict_redirect_root.conf"); }
+    catch (const std::exception&) { threw = true; }
+    EXPECT_TRUE(threw);
+    passTest();
+}
+
+static void test_LoadConflictAutoindexCgi() {
+    beginTest("LoadConflictAutoindexCgi");
+    Config cfg;
+    bool threw = false;
+    try { cfg.loadFile("conf/conflict_autoindex_cgi.conf"); }
+    catch (const std::exception&) { threw = true; }
+    EXPECT_TRUE(threw);
+    passTest();
+}
+
 // ---------------------------------------------------------------- getServer --
 
 static void test_GetServerByPort() {
@@ -261,6 +330,95 @@ static void test_LocationOverridesServerRoot() {
     passTest();
 }
 
+static void test_AllowMethodsRestrictLocation() {
+    beginTest("AllowMethodsRestrictLocation");
+    Config cfg;
+    cfg.loadFile("conf/directives.conf");
+    const ServerContext* s = cfg.getServer(8080, "");
+    EXPECT_TRUE(s != NULL);
+
+    const LocationContext* root = cfg.matchLocation(s, "/");
+    EXPECT_TRUE(root != NULL);
+    EXPECT_TRUE(root->getIsMethodAllowed("GET"));
+    EXPECT_FALSE(root->getIsMethodAllowed("POST"));
+    EXPECT_FALSE(root->getIsMethodAllowed("DELETE"));
+
+    const LocationContext* upload = cfg.matchLocation(s, "/upload/file.txt");
+    EXPECT_TRUE(upload != NULL);
+    EXPECT_TRUE(upload->getIsMethodAllowed("GET"));
+    EXPECT_TRUE(upload->getIsMethodAllowed("POST"));
+    EXPECT_TRUE(upload->getIsMethodAllowed("DELETE"));
+    passTest();
+}
+
+static void test_DefaultMethodsAllowAllWhenDirectiveMissing() {
+    beginTest("DefaultMethodsAllowAllWhenDirectiveMissing");
+    Config cfg;
+    cfg.loadFile("conf/directives.conf");
+    const ServerContext* s = cfg.getServer(8080, "");
+    EXPECT_TRUE(s != NULL);
+    const LocationContext* loc = cfg.matchLocation(s, "/default/page.html");
+    EXPECT_TRUE(loc != NULL);
+    EXPECT_TRUE(loc->getIsMethodAllowed("GET"));
+    EXPECT_TRUE(loc->getIsMethodAllowed("POST"));
+    EXPECT_TRUE(loc->getIsMethodAllowed("DELETE"));
+    passTest();
+}
+
+static void test_LocationDirectivesParsed() {
+    beginTest("LocationDirectivesParsed");
+    Config cfg;
+    cfg.loadFile("conf/directives.conf");
+    const ServerContext* s = cfg.getServer(8080, "");
+    EXPECT_TRUE(s != NULL);
+
+    const LocationContext* upload = cfg.matchLocation(s, "/upload/file.txt");
+    EXPECT_TRUE(upload != NULL);
+    EXPECT_TRUE(upload->getUploadEnable());
+    EXPECT_STREQ(upload->getUploadStore(), "tmp_upload");
+    EXPECT_EQ(upload->getClientMaxBodySize(), (size_t)4096);
+
+    const LocationContext* cgi = cfg.matchLocation(s, "/cgi-bin/hello.py");
+    EXPECT_TRUE(cgi != NULL);
+    EXPECT_EQ(cgi->getCgiExtensions().size(), (size_t)2);
+    EXPECT_TRUE(cgi->getCgiInfo().find(".py") != cgi->getCgiInfo().end());
+    EXPECT_STREQ(cgi->getCgiInfo().find(".py")->second, "/usr/bin/python3");
+    EXPECT_TRUE(cgi->getCgiInfo().find(".php") != cgi->getCgiInfo().end());
+    EXPECT_STREQ(cgi->getCgiInfo().find(".php")->second, "/usr/bin/php-cgi");
+
+    const LocationContext* redirect = cfg.matchLocation(s, "/old");
+    EXPECT_TRUE(redirect != NULL);
+    EXPECT_EQ(redirect->getRedirectCode(), 301);
+    EXPECT_STREQ(redirect->getRedirectUrl(), "/new");
+
+    const LocationContext* files = cfg.matchLocation(s, "/files/a.txt");
+    EXPECT_TRUE(files != NULL);
+    EXPECT_STREQ(files->getAlias(), "/srv/files");
+
+    const LocationContext* list = cfg.matchLocation(s, "/list/");
+    EXPECT_TRUE(list != NULL);
+    EXPECT_TRUE(list->getAutoindex());
+    passTest();
+}
+
+static void test_LocationInheritsServerSettings() {
+    beginTest("LocationInheritsServerSettings");
+    Config cfg;
+    cfg.loadFile("conf/directives.conf");
+    const ServerContext* s = cfg.getServer(8080, "");
+    EXPECT_TRUE(s != NULL);
+    const LocationContext* loc = cfg.matchLocation(s, "/default/page.html");
+    EXPECT_TRUE(loc != NULL);
+    EXPECT_STREQ(loc->getRoot(), "www");
+    EXPECT_EQ(loc->getIndex().size(), (size_t)2);
+    EXPECT_STREQ(loc->getIndex()[0], "home.html");
+    EXPECT_STREQ(loc->getIndex()[1], "fallback.html");
+    EXPECT_EQ(loc->getClientMaxBodySize(), (size_t)2048);
+    EXPECT_TRUE(loc->getErrorPages().find(404) != loc->getErrorPages().end());
+    EXPECT_STREQ(loc->getErrorPages().find(404)->second, "www/errors/404.html");
+    passTest();
+}
+
 // ------------------------------------------------------------------- main --
 
 int main() {
@@ -277,8 +435,15 @@ int main() {
     RUN_TEST(test_LoadMultipleServers);
     RUN_TEST(test_LoadServerWithAllDirectives);
     RUN_TEST(test_LoadCgiConf);
+    RUN_TEST(test_LoadListenIpPort);
     RUN_TEST(test_TokenizeComment);
     RUN_TEST(test_ClientMaxBodySizeWithSuffix);
+    RUN_TEST(test_LoadInvalidAllowMethod);
+    RUN_TEST(test_LoadInvalidAutoindex);
+    RUN_TEST(test_LoadInvalidUploadEnable);
+    RUN_TEST(test_LoadInvalidCgiExtension);
+    RUN_TEST(test_LoadConflictRedirectRoot);
+    RUN_TEST(test_LoadConflictAutoindexCgi);
 
     std::cout << "\n[ getServer tests ]" << std::endl;
     RUN_TEST(test_GetServerByPort);
@@ -295,6 +460,10 @@ int main() {
     RUN_TEST(test_MatchLocationNullServer);
     RUN_TEST(test_LocationInheritsServerRoot);
     RUN_TEST(test_LocationOverridesServerRoot);
+    RUN_TEST(test_AllowMethodsRestrictLocation);
+    RUN_TEST(test_DefaultMethodsAllowAllWhenDirectiveMissing);
+    RUN_TEST(test_LocationDirectivesParsed);
+    RUN_TEST(test_LocationInheritsServerSettings);
 
     return testSummary();
 }

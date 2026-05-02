@@ -103,6 +103,76 @@ static void test_OKPostWithContentLength() {
     passTest();
 }
 
+static void test_OKCorrectNewLine() {
+    beginTest("OKCorrectNewLine");
+    HttpRequest req;
+    req.parse("\r\n\r\nGET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    EXPECT_FALSE(req.isError());
+    EXPECT_TRUE(req.isCompleted());
+    EXPECT_STREQ(req.getPath(), "/");
+    passTest();
+}
+
+static void test_OKHeaderOWSTrimmed() {
+    beginTest("OKHeaderOWSTrimmed");
+    HttpRequest req;
+    req.parse("GET / HTTP/1.1\r\nHost:\t \t localhost:49200 \t \t\r\n\r\n");
+    EXPECT_FALSE(req.isError());
+    EXPECT_TRUE(req.isCompleted());
+    EXPECT_STREQ(req.getHeader("host"), "localhost:49200");
+    passTest();
+}
+
+static void test_OKHeaderListMultipleLine() {
+    beginTest("OKHeaderListMultipleLine");
+    HttpRequest req;
+    req.parse("GET / HTTP/1.1\r\nHost: localhost\r\nHoge: hoge\r\nHoge: fuga\r\n\r\n");
+    EXPECT_FALSE(req.isError());
+    EXPECT_TRUE(req.isCompleted());
+    EXPECT_STREQ(req.getHeader("hoge"), "hoge, fuga");
+    passTest();
+}
+
+static void test_OKCommaInDquoteHeader() {
+    beginTest("OKCommaInDquoteHeader");
+    HttpRequest req;
+    req.parse("GET / HTTP/1.1\r\nHost: localhost\r\nHoge: \"a, b,,c\"\r\n\r\n");
+    EXPECT_FALSE(req.isError());
+    EXPECT_TRUE(req.isCompleted());
+    EXPECT_STREQ(req.getHeader("hoge"), "\"a, b,,c\"");
+    passTest();
+}
+
+static void test_OKChunkWithExtension() {
+    beginTest("OKChunkWithExtension");
+    HttpRequest req;
+    req.parse("POST / HTTP/1.1\r\nHost: localhost\r\nTransfer-Encoding: chunked\r\n\r\n5;name=value\r\nhello\r\n0\r\n\r\n");
+    EXPECT_FALSE(req.isError());
+    EXPECT_TRUE(req.isCompleted());
+    EXPECT_STREQ(req.getBody(), "hello");
+    passTest();
+}
+
+static void test_OKTransferEncodingCaseInsensitive() {
+    beginTest("OKTransferEncodingCaseInsensitive");
+    HttpRequest req;
+    req.parse("POST / HTTP/1.1\r\nHost: localhost\r\nTransfer-Encoding: ChUnKeD\r\n\r\n5\r\nhello\r\n0\r\n\r\n");
+    EXPECT_FALSE(req.isError());
+    EXPECT_TRUE(req.isCompleted());
+    EXPECT_STREQ(req.getBody(), "hello");
+    passTest();
+}
+
+static void test_OKHttp10WithoutHost() {
+    beginTest("OKHttp10WithoutHost");
+    HttpRequest req;
+    req.parse("GET /legacy HTTP/1.0\r\n\r\n");
+    EXPECT_FALSE(req.isError());
+    EXPECT_TRUE(req.isCompleted());
+    EXPECT_STREQ(req.getVersion(), "HTTP/1.0");
+    passTest();
+}
+
 // --------------------------------------------------------------- KO tests --
 
 static void test_KOFormatNotExistHostHeader() {
@@ -198,12 +268,10 @@ static void test_KOFormatExistOBSfold() {
 
 static void test_KOHeaderSPBeforeColon() {
     beginTest("KOHeaderSPBeforeColon");
-    // trim() in _parseHeader strips trailing space from key → valid parse.
-    // This test verifies the actual behavior (space is trimmed, not rejected).
     HttpRequest req;
     req.parse("GET / HTTP/1.1\r\nHost : localhost\r\n\r\n");
-    EXPECT_FALSE(req.isError());
-    EXPECT_TRUE(req.isCompleted());
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
     passTest();
 }
 
@@ -214,6 +282,24 @@ static void test_KOLowercaseMethod() {
     req.parse("get / HTTP/1.1\r\nHost: localhost\r\n\r\n");
     EXPECT_TRUE(req.isError());
     EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOMethodNotImplemented() {
+    beginTest("KOMethodNotImplemented");
+    HttpRequest req;
+    req.parse("HEAD / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 501);
+    passTest();
+}
+
+static void test_KOUnknownMethod() {
+    beginTest("KOUnknownMethod");
+    HttpRequest req;
+    req.parse("HOGE / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 501);
     passTest();
 }
 
@@ -333,6 +419,133 @@ static void test_OKChunkSizeZero() {
     passTest();
 }
 
+static void test_KOFormatExistSPBeforeRequestLine() {
+    beginTest("KOFormatExistSPBeforeRequestLine");
+    HttpRequest req;
+    req.parse(" GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOFormatExistSPBetweenMethodAndURL() {
+    beginTest("KOFormatExistSPBetweenMethodAndURL");
+    HttpRequest req;
+    req.parse("GET  / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOFormatExistSPBetweenURLAndVersion() {
+    beginTest("KOFormatExistSPBetweenURLAndVersion");
+    HttpRequest req;
+    req.parse("GET /  HTTP/1.1\r\nHost: localhost\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOFormatExistSPAfterVersion() {
+    beginTest("KOFormatExistSPAfterVersion");
+    HttpRequest req;
+    req.parse("GET / HTTP/1.1 \r\nHost: localhost\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOFormatNotExistRequestLine() {
+    beginTest("KOFormatNotExistRequestLine");
+    HttpRequest req;
+    req.parse("Host: localhost\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOFormatNotExistCRLFBetweenRequestLineAndHeader() {
+    beginTest("KOFormatNotExistCRLFBetweenRequestLineAndHeader");
+    HttpRequest req;
+    req.parse("GET / HTTP/1.1Host: localhost\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOHeaderTabBeforeColon() {
+    beginTest("KOHeaderTabBeforeColon");
+    HttpRequest req;
+    req.parse("GET / HTTP/1.1\r\nHost\t: localhost\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOHeaderUnbalancedDquote() {
+    beginTest("KOHeaderUnbalancedDquote");
+    HttpRequest req;
+    req.parse("GET / HTTP/1.1\r\nHost: \"localhost\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOMultipleHostHeaders() {
+    beginTest("KOMultipleHostHeaders");
+    HttpRequest req;
+    req.parse("GET / HTTP/1.1\r\nHost: localhost\r\nHost: example.com\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOHostHeaderListValue() {
+    beginTest("KOHostHeaderListValue");
+    HttpRequest req;
+    req.parse("GET / HTTP/1.1\r\nHost: localhost, example.com\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOContentLengthTransferEncodingConflict() {
+    beginTest("KOContentLengthTransferEncodingConflict");
+    HttpRequest req;
+    req.parse("POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOContentLengthDuplicateMismatch() {
+    beginTest("KOContentLengthDuplicateMismatch");
+    HttpRequest req;
+    req.parse("POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\nContent-Length: 6\r\n\r\nhello");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOInvalidContentLength() {
+    beginTest("KOInvalidContentLength");
+    HttpRequest req;
+    req.parse("POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: -1\r\n\r\n");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 400);
+    passTest();
+}
+
+static void test_KOBodyExceedsCustomMaxSize() {
+    beginTest("KOBodyExceedsCustomMaxSize");
+    HttpRequest req;
+    req.setMaxBodySize(4);
+    req.parse("POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\n\r\nhello");
+    EXPECT_TRUE(req.isError());
+    EXPECT_EQ(req.getErrorCode(), 413);
+    passTest();
+}
+
 // ------------------------------------------------------------------ main --
 
 int main() {
@@ -348,6 +561,13 @@ int main() {
     RUN_TEST(test_OKIncrementalParse);
     RUN_TEST(test_OKPostWithContentLength);
     RUN_TEST(test_OKChunkSizeZero);
+    RUN_TEST(test_OKCorrectNewLine);
+    RUN_TEST(test_OKHeaderOWSTrimmed);
+    RUN_TEST(test_OKHeaderListMultipleLine);
+    RUN_TEST(test_OKCommaInDquoteHeader);
+    RUN_TEST(test_OKChunkWithExtension);
+    RUN_TEST(test_OKTransferEncodingCaseInsensitive);
+    RUN_TEST(test_OKHttp10WithoutHost);
 
     std::cout << "\n[ KO tests ]" << std::endl;
     RUN_TEST(test_KOFormatNotExistHostHeader);
@@ -362,6 +582,8 @@ int main() {
     RUN_TEST(test_KOFormatExistOBSfold);
     RUN_TEST(test_KOHeaderSPBeforeColon);
     RUN_TEST(test_KOLowercaseMethod);
+    RUN_TEST(test_KOMethodNotImplemented);
+    RUN_TEST(test_KOUnknownMethod);
     RUN_TEST(test_KOHeaderBufferTooLarge);
     RUN_TEST(test_KOURLTooLongInline);
     RUN_TEST(test_KOChunkSizeNotHex);
@@ -373,6 +595,20 @@ int main() {
     RUN_TEST(test_KOVersionInvalidMinorLong);
     RUN_TEST(test_KOVersionInvalidMajorLong);
     RUN_TEST(test_KOVersionHTTP09);
+    RUN_TEST(test_KOFormatExistSPBeforeRequestLine);
+    RUN_TEST(test_KOFormatExistSPBetweenMethodAndURL);
+    RUN_TEST(test_KOFormatExistSPBetweenURLAndVersion);
+    RUN_TEST(test_KOFormatExistSPAfterVersion);
+    RUN_TEST(test_KOFormatNotExistRequestLine);
+    RUN_TEST(test_KOFormatNotExistCRLFBetweenRequestLineAndHeader);
+    RUN_TEST(test_KOHeaderTabBeforeColon);
+    RUN_TEST(test_KOHeaderUnbalancedDquote);
+    RUN_TEST(test_KOMultipleHostHeaders);
+    RUN_TEST(test_KOHostHeaderListValue);
+    RUN_TEST(test_KOContentLengthTransferEncodingConflict);
+    RUN_TEST(test_KOContentLengthDuplicateMismatch);
+    RUN_TEST(test_KOInvalidContentLength);
+    RUN_TEST(test_KOBodyExceedsCustomMaxSize);
 
     return testSummary();
 }
