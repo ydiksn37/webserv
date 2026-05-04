@@ -45,7 +45,7 @@ class Client {
 			pid_t		cgi_pid;
 			std::string	cgi_input;
 			std::string	cgi_output;
-			time_t		cgi_start_time;
+			std::time_t	cgi_start_time;
 			int			local_port;
 			bool		should_close;
 			ClientData();

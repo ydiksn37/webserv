@@ -182,13 +182,13 @@ std::string	HttpResponse::_getStatusMessage(int code) const {
 }
 
 std::string	HttpResponse::_getCurrentDate() const {
-	time_t		now;
-	struct tm	*tm;
-	char			buf[100];
+	std::time_t	now;
+	std::tm			*tm;
+	char				buf[100];
 
-	now = time(0);
-	tm = gmtime(&now);
-	strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S GMT", tm);
+	now = std::time(0);
+	tm = std::gmtime(&now);
+	std::strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S GMT", tm);
 	return (std::string(buf));
 }
 

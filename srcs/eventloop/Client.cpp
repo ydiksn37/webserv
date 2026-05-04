@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <cctype>
 #include <sstream>
+#include <ctime>
 
 bool endswith(std::string str, std::string suffix) {
 	if(str.size() < suffix.size())
@@ -82,7 +83,7 @@ int Client::Read(int fd, std::vector<PipeInfo>& new_pipes) {
 				client_[fd].cgi_write_fd = pipes.second;
 				client_[fd].cgi_pid = cgi.getPid();
 				client_[fd].cgi_input = client_[fd].request.getBody();
-				client_[fd].cgi_start_time = time(NULL);
+				client_[fd].cgi_start_time = std::time(NULL);
 				client_[fd].cgi_output.clear();
 
 				pipe_to_client_[pipes.first] = fd;
@@ -248,7 +249,7 @@ void Client::CleanupClient(int client_fd) {
 
 std::vector<int> Client::HandleCgiTimeout() {
 	std::vector<int> timed_out_fds;
-	time_t now = time(NULL);
+	std::time_t now = std::time(NULL);
 	for (std::map<int, ClientData>::iterator it = client_.begin(); it != client_.end(); ++it) {
 		if (it->second.is_waiting_cgi && now - it->second.cgi_start_time > 10) {
 			HttpResponse err;
