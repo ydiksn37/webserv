@@ -128,7 +128,9 @@ std::pair<int, int> CgiHandler::execute(const HttpRequest& request,
 		size_t last_slash = script_path.find_last_of('/');
 		std::string script_arg = script_path;
 		if (last_slash != std::string::npos) {
-			chdir(script_path.substr(0, last_slash).c_str());
+			if (chdir(script_path.substr(0, last_slash).c_str()) != 0) {
+				// エラーハンドリング
+			}
 			script_arg = script_path.substr(last_slash + 1);
 		}
 
