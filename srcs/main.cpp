@@ -1,5 +1,6 @@
 #include "Config.hpp"
 #include "EventLoop.hpp"
+#include <iostream>
 
 int main(int argc, char** argv) {
 	std::string config_file;

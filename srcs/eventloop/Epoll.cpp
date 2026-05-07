@@ -10,7 +10,6 @@
 #include <algorithm>
 #include "EventLoop.hpp"
 #include <fcntl.h>
-#include <stdexcept>
 
 Epoll::Epoll() {
 	epfd_ = epoll_create(1);

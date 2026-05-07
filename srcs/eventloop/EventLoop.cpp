@@ -1,8 +1,6 @@
 #include "Client.hpp"
 #include "Epoll.hpp"
 #include "Config.hpp"
-#include <iostream>
-#include <ostream>
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <vector>

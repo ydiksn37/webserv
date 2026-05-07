@@ -1,7 +1,6 @@
 #ifndef LOCATIONCONTEXT_HPP
 # define LOCATIONCONTEXT_HPP
 
-# include <iostream>
 # include <string>
 # include <vector>
 # include <map>

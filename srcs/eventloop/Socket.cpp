@@ -2,7 +2,6 @@
 # include <csignal>
 # include <cstring>
 # include <netinet/in.h>
-# include <stdexcept>
 # include <sys/socket.h>
 # include <fcntl.h>
 #include "EventLoop.hpp"

@@ -1,4 +1,5 @@
 #include "LocationContext.hpp"
+#include <stdexcept>
 
 LocationContext::LocationContext()
 	: _path(""),
