@@ -1,0 +1,1 @@
+This file is available for GET and DELETE tests.

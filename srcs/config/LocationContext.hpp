@@ -39,6 +39,7 @@ class LocationContext {
 
 		void setPath(const std::string& path);
 		void setAllowedMethod(const std::string& method);
+		void clearAllowedMethods();
 		void setRoot(const std::string& root);
 		void setAlias(const std::string& alias);
 		void setIndex(const std::string& index);
