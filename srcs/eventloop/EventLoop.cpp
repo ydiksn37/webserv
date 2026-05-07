@@ -1,65 +1,72 @@
 #include "Client.hpp"
 #include "Epoll.hpp"
+#include "Config.hpp"
 #include <iostream>
 #include <ostream>
 #include <sys/epoll.h>
 #include <unistd.h>
-#include "Config.hpp"
+#include <vector>
 
-std::string get_epoll_events_str(uint32_t events) {
-	std::string str = "";
-
-	if (events & EPOLLIN)      str += "EPOLLIN ";
-	if (events & EPOLLOUT)     str += "EPOLLOUT ";
-
-#ifdef EPOLLRDHUP
-	if (events & EPOLLRDHUP)   str += "EPOLLRDHUP ";
-#endif
-
-	if (events & EPOLLERR)     str += "EPOLLERR ";
-	if (events & EPOLLHUP)     str += "EPOLLHUP ";
-	if (events & EPOLLPRI)     str += "EPOLLPRI ";
-
-	if (events & EPOLLET)      str += "EPOLLET ";
-	if (events & EPOLLONESHOT) str += "EPOLLONESHOT ";
-
-	if (str.empty())           str = "UNKNOWN ";
-
-	return str;
-}
-
-void EventLoop(const Config& config)
-{
+void EventLoop(const Config& config) {
 	Client client(config);
 	Epoll ep(config);
 
-	while(1)
-	{
-		const std::vector<epoll_event>& events = ep.WaitEvents();
+	while(1) {
+		const std::vector<epoll_event>& events = ep.WaitEvents(1000);
 
-		for(unsigned i=0;i<events.size();i++)
-		{
-			std::cout<<"\033[36m"<<get_epoll_events_str(events[i].events)<<": \033[0m"<<(ep.IsListen(events[i].data.fd)?"Listen_fd":"Client_fd")<<":"<<events[i].data.fd<<std::endl;
-			if(ep.IsListen(events[i].data.fd))
-				ep.Accept(events[i].data.fd);
-			else
-			{
-				int client_fd = events[i].data.fd;
-				if(events[i].events & EPOLLIN)
-				{
-					if(client.Read(client_fd) < 0)
-					{
-						std::cout<<"Client_fd: "<<client_fd<<" Disconnected."<<std::endl;
-						close(client_fd);
+		std::vector<int> timed_out_fds = client.HandleCgiTimeout();
+		for (size_t i = 0; i < timed_out_fds.size(); ++i) {
+			ep.Del(timed_out_fds[i]);
+		}
+
+		for(unsigned i = 0; i < events.size(); i++) {
+			int fd = events[i].data.fd;
+			if(ep.IsListen(fd)) {
+				int client_fd, port;
+				ep.Accept(fd, client_fd, port);
+				client.SetLocalPort(client_fd, port);
+			}
+			else {
+				int client_fd = client.GetClientFdFromPipe(fd);
+				if (client_fd != -1) {
+					bool closed = false;
+					if (events[i].events & (EPOLLIN | EPOLLHUP | EPOLLERR)) {
+						bool closed_event = events[i].events & (EPOLLHUP | EPOLLERR);
+						if (client.ReadCgi(fd, closed_event) == 1) {
+							ep.Del(fd);
+							closed = true;
+						}
 					}
-					else if(client.WriteBegin(client_fd))
+					if (!closed && (events[i].events & EPOLLOUT)) {
+						if (client.WriteCgi(fd) == 1) {
+							ep.Del(fd);
+							closed = true;
+						}
+					}
+					if (client.WriteBegin(client_fd))
 						ep.Mod(client_fd, EPOLLIN | EPOLLOUT);
 				}
-				if(events[i].events & EPOLLOUT)
-				{
-					client.Write(client_fd);
-					if(client.WriteEnd(client_fd))
-						ep.Mod(client_fd, EPOLLIN);
+				else {
+					if(events[i].events & EPOLLIN) {
+						std::vector<Client::PipeInfo> new_pipes;
+						if(client.Read(fd, new_pipes) < 0)
+							ep.Del(fd);
+						else {
+							for (size_t j = 0; j < new_pipes.size(); ++j)
+								ep.Add(new_pipes[j].fd, new_pipes[j].events);
+							if(client.WriteBegin(fd))
+								ep.Mod(fd, EPOLLIN | EPOLLOUT);
+						}
+					}
+					if(events[i].events & EPOLLOUT) {
+						client.Write(fd);
+						if(client.WriteEnd(fd)) {
+							if (client.ShouldClose(fd))
+								ep.Del(fd);
+							else
+								ep.Mod(fd, EPOLLIN);
+						}
+					}
 				}
 			}
 		}

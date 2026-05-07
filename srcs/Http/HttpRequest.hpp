@@ -1,17 +1,14 @@
 #ifndef HTTPREQUEST_HPP
 # define HTTPREQUEST_HPP
 
+# include "Config.hpp"
 # include <cstddef>
 # include <string>
 # include <map>
 # include <vector>
-# include "Config.hpp"
 
-// HTTPリクエストを解析・保持するクラス
-class HttpRequest
-{
+class HttpRequest {
 	public:
-		// Constructors & Destructors & Overloadev Operators
 		HttpRequest();
 		HttpRequest(const HttpRequest &other);
 		HttpRequest&	operator=(const HttpRequest &other);
@@ -22,7 +19,6 @@ class HttpRequest
 		bool				isError() const;
 		void				clear();
 
-		// Getters
 		const std::string&	getMethod() const;
 		const std::string&	getUri() const;
 		const std::string&	getPath() const;
@@ -36,16 +32,13 @@ class HttpRequest
 		bool				isRoutingResolved() const;
 		size_t				getContentLength() const;
 
-		// Setter
 		void				setMaxBodySize(size_t max);
 		void				setRoutingResolved(bool resolved);
 
-		// 検証用
 		bool				isMethodAllowed(const std::vector<std::string>& allowedMethods) const;
 
 	private:
-		enum ParsingState
-		{
+		enum ParsingState {
 			REQUEST_LINE,
 			HEADERS,
 			BODY,
@@ -55,22 +48,22 @@ class HttpRequest
 			ERROR
 		};
 
-		ParsingState						_state;
-		bool								_routingResolved;
-		std::string							_method;
-		std::string							_uri;
-		std::string							_path;
-		std::string							_query;
-		std::string							_version;
+		ParsingState												_state;
+		bool																_routingResolved;
+		std::string													_method;
+		std::string													_uri;
+		std::string													_path;
+		std::string													_query;
+		std::string													_version;
 		std::map<std::string, std::string>	_headers;
-		std::string							_body;
-		std::string							_buffer;
-		std::string							_empty;
-		size_t								_chunkSize;
-		size_t								_contentLength;
-		bool								_hasContentLength;
-		int									_errorCode;
-		size_t								_maxBodySize;
+		std::string													_body;
+		std::string													_buffer;
+		std::string													_empty;
+		size_t															_chunkSize;
+		size_t															_contentLength;
+		bool																_hasContentLength;
+		int																	_errorCode;
+		size_t															_maxBodySize;
 
 		void	_setError(int errorCode);
 		void	_parseRequestLine(std::string &line);

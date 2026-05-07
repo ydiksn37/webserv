@@ -5,54 +5,36 @@
 #include <sys/stat.h>
 #include <fstream>
 
-static std::string	htmlEscape(const std::string &value)
-{
+static std::string	htmlEscape(const std::string &value) {
 	std::string	escaped;
 
-	for (size_t i = 0; i < value.length(); ++i)
-	{
+	for (size_t i = 0; i < value.length(); ++i) {
 		if (value[i] == '&')
-		{
 			escaped += "&amp;";
-		}
 		else if (value[i] == '<')
-		{
 			escaped += "&lt;";
-		}
 		else if (value[i] == '>')
-		{
 			escaped += "&gt;";
-		}
 		else if (value[i] == '"')
-		{
 			escaped += "&quot;";
-		}
 		else
-		{
 			escaped += value[i];
-		}
 	}
 	return (escaped);
 }
 
-HttpResponse::HttpResponse()
-	: _version("HTTP/1.1"), _statusCode(200), _reasonPhrase("OK")
-{
+HttpResponse::HttpResponse() : _version("HTTP/1.1"), _statusCode(200), _reasonPhrase("OK") {
 	this->setHeader("Date", this->_getCurrentDate());
 	this->setHeader("Server", "Webserv/1.0");
 }
 
 HttpResponse::HttpResponse(const HttpResponse& other)
 	: _version(other._version), _statusCode(other._statusCode),
-	  _reasonPhrase(other._reasonPhrase), _headers(other._headers),
-	  _body(other._body)
-{
-}
+		_reasonPhrase(other._reasonPhrase), _headers(other._headers),
+		_body(other._body) {}
 
-HttpResponse&	HttpResponse::operator=(const HttpResponse& other)
-{
-	if (this != &other)
-	{
+HttpResponse&	HttpResponse::operator=(const HttpResponse& other) {
+	if (this != &other) {
 		this->_version = other._version;
 		this->_statusCode = other._statusCode;
 		this->_reasonPhrase = other._reasonPhrase;
@@ -62,12 +44,9 @@ HttpResponse&	HttpResponse::operator=(const HttpResponse& other)
 	return (*this);
 }
 
-HttpResponse::~HttpResponse()
-{
-}
+HttpResponse::~HttpResponse() {}
 
-std::map<int, std::string>	HttpResponse::_initStatusMessages()
-{
+std::map<int, std::string>		HttpResponse::_initStatusMessages() {
 	std::map<int, std::string>	m;
 
 	m[100] = "Continue";
@@ -107,6 +86,7 @@ std::map<int, std::string>	HttpResponse::_initStatusMessages()
 	m[417] = "Expectation Failed";
 	m[421] = "Misdirected Request";
 	m[426] = "Upgrade Required";
+	m[431] = "Request Header Fields Too Large";
 	m[500] = "Internal Server Error";
 	m[501] = "Not Implemented";
 	m[502] = "Bad Gateway";
@@ -116,33 +96,26 @@ std::map<int, std::string>	HttpResponse::_initStatusMessages()
 	return (m);
 }
 
-void	HttpResponse::setStatusCode(int code)
-{
+void	HttpResponse::setStatusCode(int code) {
 	this->_statusCode = code;
 	this->_reasonPhrase = this->_getStatusMessage(code);
-	if (code >= 400)
-	{
+	if (code >= 400) {
 		this->setBody(this->_generateDefaultErrorPage(code));
 		this->setHeader("Content-Type", "text/html");
 	}
 }
 
-void	HttpResponse::setReasonPhrase(const std::string& phrase)
-{
+void	HttpResponse::setReasonPhrase(const std::string& phrase) {
 	this->_reasonPhrase = phrase;
 }
 
-void	HttpResponse::setHeader(const std::string& key, const std::string& value)
-{
+void	HttpResponse::setHeader(const std::string& key, const std::string& value) {
 	if (value.find("\r\n") != std::string::npos || key.find("\r\n") != std::string::npos)
-	{
-		return ;
-	}
+		return;
 	this->_headers[this->_normalizeHeaderKey(key)] = value;
 }
 
-void	HttpResponse::setBody(const std::string& body)
-{
+void	HttpResponse::setBody(const std::string& body) {
 	std::stringstream	ss;
 
 	this->_body = body;
@@ -150,24 +123,20 @@ void	HttpResponse::setBody(const std::string& body)
 	this->setHeader("Content-Length", ss.str());
 }
 
-void	HttpResponse::setBodyFromFile(const std::string& filepath)
-{
+void	HttpResponse::setBodyFromFile(const std::string& filepath) {
 	struct stat			fileStat;
 	std::ifstream		file(filepath.c_str(), std::ios::binary);
 	std::stringstream	buffer;
 
-	if (stat(filepath.c_str(), &fileStat) != 0)
-	{
+	if (stat(filepath.c_str(), &fileStat) != 0) {
 		this->setStatusCode(404);
 		return ;
 	}
-	if (S_ISDIR(fileStat.st_mode))
-	{
+	if (S_ISDIR(fileStat.st_mode)) {
 		this->setStatusCode(403);
 		return ;
 	}
-	if (!file.is_open())
-	{
+	if (!file.is_open()) {
 		this->setStatusCode(403);
 		return ;
 	}
@@ -176,30 +145,25 @@ void	HttpResponse::setBodyFromFile(const std::string& filepath)
 	this->setHeader("Content-Type", this->getContentType(filepath));
 }
 
-void	HttpResponse::setHttpVersion(const std::string& version)
-{
+void	HttpResponse::setHttpVersion(const std::string& version) {
 	this->_version = version;
 }
 
-void	HttpResponse::setRedirect(int code, const std::string& location)
-{
+void	HttpResponse::setRedirect(int code, const std::string& location) {
 	this->setStatusCode(code);
 	this->setHeader("Location", location);
 	this->setBody("");
 }
 
-const std::map<std::string, std::string>&	HttpResponse::getHeaders() const
-{
+const std::map<std::string, std::string>&	HttpResponse::getHeaders() const {
 	return (this->_headers);
 }
 
-std::string	HttpResponse::serialize() const
-{
+std::string	HttpResponse::serialize() const {
 	std::stringstream	ss;
 
 	ss << this->_version << " " << this->_statusCode << " " << this->_reasonPhrase << "\r\n";
-	for (std::map<std::string, std::string>::const_iterator it = this->_headers.begin(); it != this->_headers.end(); ++it)
-	{
+	for (std::map<std::string, std::string>::const_iterator it = this->_headers.begin(); it != this->_headers.end(); ++it) {
 		ss << it->first << ": " << it->second << "\r\n";
 	}
 	ss << "\r\n";
@@ -207,55 +171,43 @@ std::string	HttpResponse::serialize() const
 	return (ss.str());
 }
 
-std::string	HttpResponse::_getStatusMessage(int code) const
-{
-	static std::map<int, std::string>			m = _initStatusMessages();
+std::string	HttpResponse::_getStatusMessage(int code) const {
+	static std::map<int, std::string>						m = _initStatusMessages();
 	std::map<int, std::string>::const_iterator	it;
 
 	it = m.find(code);
 	if (it != m.end())
-	{
 		return (it->second);
-	}
 	return ("Unknown");
 }
 
-std::string	HttpResponse::_getCurrentDate() const
-{
-	time_t		now;
-	struct tm	*tm;
-	char		buf[100];
+std::string	HttpResponse::_getCurrentDate() const {
+	std::time_t	now;
+	std::tm			*tm;
+	char				buf[100];
 
-	now = time(0);
-	tm = gmtime(&now);
-	strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S GMT", tm);
+	now = std::time(0);
+	tm = std::gmtime(&now);
+	std::strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S GMT", tm);
 	return (std::string(buf));
 }
 
-std::string	HttpResponse::_normalizeHeaderKey(const std::string& key) const
-{
+std::string	HttpResponse::_normalizeHeaderKey(const std::string& key) const {
 	std::string	normalized;
-	bool		capitalize_next;
+	bool				capitalize_next;
 
 	normalized = key;
 	capitalize_next = true;
-	for (size_t i = 0; i < normalized.length(); ++i)
-	{
-		if (capitalize_next)
-		{
+	for (size_t i = 0; i < normalized.length(); ++i) {
+		if (capitalize_next) {
 			normalized[i] = static_cast<char>(
 				std::toupper(static_cast<unsigned char>(normalized[i])));
 			capitalize_next = false;
-		}
-		else
-		{
-			normalized[i] = static_cast<char>(
-				std::tolower(static_cast<unsigned char>(normalized[i])));
+		} else {
+			normalized[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(normalized[i])));
 		}
 		if (normalized[i] == '-')
-		{
 			capitalize_next = true;
-		}
 	}
 	return (normalized);
 }
@@ -263,7 +215,7 @@ std::string	HttpResponse::_normalizeHeaderKey(const std::string& key) const
 std::string	HttpResponse::_generateDefaultErrorPage(int code) const
 {
 	std::stringstream	ss;
-	std::string			message;
+	std::string				message;
 
 	message = this->_getStatusMessage(code);
 	ss << "<html>\r\n";
@@ -279,41 +231,32 @@ std::string	HttpResponse::_generateDefaultErrorPage(int code) const
 std::string	HttpResponse::generateDirectoryListing(const std::string& path, const std::string& uri)
 {
 	std::stringstream	ss;
-	DIR					*dir;
-	struct dirent		*entry;
-	std::string			baseUri;
+	DIR								*dir;
+	struct dirent			*entry;
+	std::string				baseUri;
 
 	dir = opendir(path.c_str());
 	if (dir == NULL)
-	{
 		return ("");
-	}
 	baseUri = uri;
 	if (baseUri.empty())
-	{
 		baseUri = "/";
-	}
 
 	ss << "<html>\r\n<head><title>Index of " << htmlEscape(baseUri)
 		<< "</title></head>\r\n";
 	ss << "<body>\r\n<h1>Index of " << htmlEscape(baseUri)
 		<< "</h1><hr><pre>\r\n";
 
-	while ((entry = readdir(dir)) != NULL)
-	{
+	while ((entry = readdir(dir)) != NULL) {
 		std::string	name = entry->d_name;
 		std::string	displayName;
 
 		if (name == ".")
-		{
 			continue;
-		}
 		displayName = htmlEscape(name);
 		ss << "<a href=\"" << htmlEscape(baseUri);
 		if (baseUri[baseUri.length() - 1] != '/')
-		{
 			ss << "/";
-		}
 		ss << displayName << "\">" << displayName << "</a>\r\n";
 	}
 	closedir(dir);
@@ -328,9 +271,7 @@ std::string	HttpResponse::getContentType(const std::string& path)
 
 	dot_pos = path.find_last_of('.');
 	if (dot_pos == std::string::npos)
-	{
 		return ("application/octet-stream");
-	}
 
 	std::string	ext = path.substr(dot_pos);
 	if (ext == ".html" || ext == ".htm") return ("text/html");
