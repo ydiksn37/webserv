@@ -1,6 +1,5 @@
 #include "engine.hpp"
 #include <cstdlib>
-#include <sstream>
 #include <string>
 #include <sys/stat.h>
 #include <unistd.h>
