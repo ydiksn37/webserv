@@ -186,11 +186,9 @@ void	HttpRequest::parse(const std::string &raw_data) {
 				if (line.empty())
 					continue ;
 				this->_parseRequestLine(line);
-			}
-			else
+			} else
 				this->_parseHeader(line);
-		}
-		else if (this->_state == BODY) {
+		} else if (this->_state == BODY) {
 			size_t	remaining;
 			size_t	toCopy;
 
@@ -205,8 +203,7 @@ void	HttpRequest::parse(const std::string &raw_data) {
 			if (this->_body.length() >= this->_contentLength)
 				this->_state = COMPLETE;
 			break ;
-		}
-		else if (this->_state == CHUNKED_BODY) {
+		} else if (this->_state == CHUNKED_BODY) {
 			if (this->_chunkSize == 0) {
 				pos = this->_buffer.find("\r\n");
 				if (pos == std::string::npos)
@@ -242,11 +239,10 @@ void	HttpRequest::parse(const std::string &raw_data) {
 
 				this->_buffer.erase(0, this->_chunkSize + 2);
 				this->_chunkSize = 0;
-			}
-			else
+			} else {
 				break ;
-		}
-		else if (this->_state == TRAILERS) {
+			}
+		} else if (this->_state == TRAILERS) {
 			pos = this->_buffer.find("\r\n");
 			if (pos == std::string::npos)
 				break ;
@@ -383,8 +379,7 @@ void	HttpRequest::_parseRequestLine(std::string& line) {
 	if (query_pos != std::string::npos) {
 		this->_path = this->_uri.substr(0, query_pos);
 		this->_query = this->_uri.substr(query_pos + 1);
-	}
-	else {
+	} else {
 		this->_path = this->_uri;
 		this->_query = "";
 	}
@@ -393,7 +388,7 @@ void	HttpRequest::_parseRequestLine(std::string& line) {
 }
 
 void	HttpRequest::_parseHeader(std::string& line) {
-	size_t		colon;
+	size_t			colon;
 	std::string	key;
 	std::string	rawKey;
 	std::string	value;
@@ -413,11 +408,9 @@ void	HttpRequest::_parseHeader(std::string& line) {
 				return ;
 			}
 			this->_state = CHUNKED_BODY;
-		}
-		else if (this->_headers.count("content-length")) {
+		} else if (this->_headers.count("content-length")) {
 			this->_state = BODY;
-		}
-		else {
+		} else {
 			this->_state = COMPLETE;
 		}
 		return ;
@@ -469,17 +462,16 @@ void	HttpRequest::_parseHeader(std::string& line) {
 	}
 	if (this->_headers.count(key)) {
 		this->_headers[key] += ", " + value;
-	}
-	else {
+	} else {
 		this->_headers[key] = value;
 	}
 }
 
 void	HttpRequest::_normalizePath() {
 	std::vector<std::string>	segments;
-	std::stringstream			ss(this->_path);
-	std::string					segment;
-	std::string					res = "";
+	std::stringstream					ss(this->_path);
+	std::string								segment;
+	std::string								res = "";
 
 	while (std::getline(ss, segment, '/')) {
 		if (segment == "" || segment == ".") continue;

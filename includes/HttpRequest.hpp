@@ -26,9 +26,9 @@ class HttpRequest {
 		const std::string&	getHeader(const std::string& key) const;
 		const std::map<std::string, std::string>&	getHeaders() const;
 		const std::string&	getBody() const;
-		int					getErrorCode() const;
-		bool				isHeaderFinished() const;
-		bool				isRoutingResolved() const;
+		int						getErrorCode() const;
+		bool					isHeaderFinished() const;
+		bool					isRoutingResolved() const;
 		size_t				getContentLength() const;
 
 		void				setMaxBodySize(size_t max);
