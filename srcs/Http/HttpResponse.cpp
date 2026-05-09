@@ -124,8 +124,8 @@ void	HttpResponse::setBody(const std::string& body) {
 }
 
 void	HttpResponse::setBodyFromFile(const std::string& filepath) {
-	struct stat			fileStat;
-	std::ifstream		file(filepath.c_str(), std::ios::binary);
+	struct stat				fileStat;
+	std::ifstream			file(filepath.c_str(), std::ios::binary);
 	std::stringstream	buffer;
 
 	if (stat(filepath.c_str(), &fileStat) != 0) {
