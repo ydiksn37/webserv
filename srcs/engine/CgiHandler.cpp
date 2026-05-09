@@ -45,6 +45,7 @@ void CgiHandler::_setupEnv(const HttpRequest& request,
 	_env["QUERY_STRING"] = request.getQuery();
 	_env["CONTENT_LENGTH"] = sizeToStr(request.getBody().length());
 	_env["CONTENT_TYPE"] = request.getHeader("content-type");
+	_env["HTTP_COOKIE"] = request.getHeader("cookie");
 	_env["SCRIPT_NAME"] = request.getPath();
 	_env["PATH_INFO"] = request.getPath();
 	_env["SERVER_NAME"] = request.getHeader("host");
