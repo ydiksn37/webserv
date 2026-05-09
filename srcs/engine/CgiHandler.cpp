@@ -130,6 +130,8 @@ std::pair<int, int> CgiHandler::execute(const HttpRequest& request,
 		if (last_slash != std::string::npos) {
 			if (chdir(script_path.substr(0, last_slash).c_str()) != 0) {
 				// エラーハンドリング
+				std::cerr << "CGI Error: chdir failed" << std::endl;
+				exit(EXIT_FAILURE);
 			}
 			script_arg = script_path.substr(last_slash + 1);
 		}
