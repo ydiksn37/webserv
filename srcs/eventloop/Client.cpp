@@ -10,6 +10,7 @@
 #include <cctype>
 #include <sstream>
 #include <ctime>
+#include "CgiHandler.hpp"
 
 bool endswith(std::string str, std::string suffix) {
 	if(str.size() < suffix.size())

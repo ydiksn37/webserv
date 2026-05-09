@@ -1,7 +1,6 @@
 #include "test_framework.hpp"
 #include "Config.hpp"
 
-#include <stdexcept>
 #include <string>
 
 // ---------------------------------------------------------------- loadFile --

@@ -1,9 +1,6 @@
 #include "Client.hpp"
 #include "Epoll.hpp"
-#include "eventloop_int.hpp"
 #include "Config.hpp"
-#include <iostream>
-#include <ostream>
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <vector>
@@ -15,7 +12,6 @@ void EventLoop(const Config& config) {
 	while(1) {
 		const std::vector<epoll_event>& events = ep.WaitEvents(1000);
 
-		// タイムアウトしたCGIのクリーンアップ
 		std::vector<int> timed_out_fds = client.HandleCgiTimeout();
 		for (size_t i = 0; i < timed_out_fds.size(); ++i) {
 			ep.Del(timed_out_fds[i]);
@@ -31,7 +27,6 @@ void EventLoop(const Config& config) {
 			else {
 				int client_fd = client.GetClientFdFromPipe(fd);
 				if (client_fd != -1) {
-					// CGIパイプのI/O処理
 					bool closed = false;
 					if (events[i].events & (EPOLLIN | EPOLLHUP | EPOLLERR)) {
 						bool closed_event = events[i].events & (EPOLLHUP | EPOLLERR);
@@ -46,12 +41,10 @@ void EventLoop(const Config& config) {
 							closed = true;
 						}
 					}
-					// CGIの結果が書き込みバッファに入った可能性があるので、client_fd の監視状態を更新
 					if (client.WriteBegin(client_fd))
 						ep.Mod(client_fd, EPOLLIN | EPOLLOUT);
 				}
 				else {
-					// クライアントソケットのI/O処理
 					if(events[i].events & EPOLLIN) {
 						std::vector<Client::PipeInfo> new_pipes;
 						if(client.Read(fd, new_pipes) < 0)

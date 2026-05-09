@@ -1,4 +1,5 @@
 #include "ServerContext.hpp"
+#include <stdexcept>
 
 ServerContext::ServerContext()
 	: _port(80),

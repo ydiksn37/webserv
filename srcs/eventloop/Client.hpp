@@ -3,7 +3,6 @@
 
 # include "Config.hpp"
 # include "HttpRequest.hpp"
-# include "CgiHandler.hpp"
 # include <map>
 # include <string>
 # include <sys/epoll.h>

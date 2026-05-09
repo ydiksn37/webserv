@@ -1,5 +1,7 @@
 #include "engine.hpp"
 #include <cstdlib>
+#include <iostream>
+#include <sstream>
 #include <string>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -194,7 +196,6 @@ static HttpResponse	handleGet(const HttpRequest &request, const ServerContext &s
 static bool ensureDirectory(const std::string& path) {
 	struct stat st;
 	if (stat(path.c_str(), &st) != 0) {
-		// ディレクトリ作成（簡易版、再帰的ではない）
 		if (mkdir(path.c_str(), 0755) != 0)
 			return false;
 	}
@@ -230,13 +231,8 @@ static HttpResponse	handlePost(const HttpRequest &request, const ServerContext &
 		return response;
 	}
 
-	// ファイル名の決定
-	// 1. URIから取得（例: /upload/filename.txt）
-	// 2. なければ Content-Disposition 等から（今回は簡略化のためURI優先）
 	std::string filename = getFilenameFromPath(request.getPath());
 	if (filename.empty()) {
-		// ディレクトリへのPOSTなどの場合、タイムスタンプ等で生成するか400を返す
-		// 課題の要件に合わせ、URIにファイル名が含まれていることを期待する実装とする
 		applyErrorPage(response, 400, &location, &server);
 		return response;
 	}

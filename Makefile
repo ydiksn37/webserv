@@ -1,7 +1,7 @@
 NAME        = webserv
 CXX         = c++
 
-INCFLAGS    = -I./includes -I./srcs/config -I./srcs/Http -I./srcs/eventloop -I./srcs/engine
+INCFLAGS    = -Iincludes
 
 CXXFLAGS    = -Wall -Wextra -Werror -std=c++98 -pedantic -O3
 DEPFLAGS    = -MMD -MP

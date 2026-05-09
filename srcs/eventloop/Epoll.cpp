@@ -1,5 +1,5 @@
 #include "Epoll.hpp"
-#include "eventloop_int.hpp"
+#include "Socket.hpp"
 #include "Config.hpp"
 #include <cerrno>
 #include <cstddef>
@@ -8,20 +8,20 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <algorithm>
+#include "EventLoop.hpp"
 #include <fcntl.h>
-#include <stdexcept>
 
 Epoll::Epoll() {
 	epfd_ = epoll_create(1);
 	if(epfd_ < 0)
-		throw std::runtime_error(strerror(errno));
+		throw EventLoopException(strerror(errno));
 	events_.resize(max_events_);
 }
 
 Epoll::Epoll(const Config& config) {
 	epfd_ = epoll_create(1);
 	if(epfd_ < 0)
-		throw std::runtime_error(strerror(errno));
+		throw EventLoopException(strerror(errno));
 	events_.resize(max_events_);
 
 	std::vector<ServerContext> servers = config.getServers();
@@ -70,7 +70,7 @@ void Epoll::Del(int fd) {
 void Epoll::Accept(int fd, int& client_fd, int& port) {
 	client_fd = accept(fd, NULL, NULL);
 	if(client_fd < 0)
-		throw std::runtime_error(strerror(errno));
+		throw EventLoopException(strerror(errno));
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
 	Add(client_fd, EPOLLIN);
 	port = fd_to_port_[fd];
@@ -84,7 +84,7 @@ const std::vector<epoll_event>& Epoll::WaitEvents(int timeout) {
 			events_.clear();
 			return events_;
 		}
-		throw std::runtime_error(strerror(errno));
+		throw EventLoopException(strerror(errno));
 	}
 	events_.resize(events_size);
 	return events_;

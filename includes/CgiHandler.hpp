@@ -2,7 +2,7 @@
 # define CGIHANDLER_HPP
 
 # include "HttpRequest.hpp"
-# include "Config.hpp"
+#include "ServerContext.hpp"
 # include <string>
 # include <vector>
 # include <map>

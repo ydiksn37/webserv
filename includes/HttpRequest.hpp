@@ -1,7 +1,6 @@
 #ifndef HTTPREQUEST_HPP
 # define HTTPREQUEST_HPP
 
-# include "Config.hpp"
 # include <cstddef>
 # include <string>
 # include <map>
