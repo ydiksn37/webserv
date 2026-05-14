@@ -52,10 +52,12 @@ bool Client::ShouldClose(int fd) {
 int Client::Read(int fd, std::vector<PipeInfo>& new_pipes) {
 	char tmp_buffer[buffer_size];
 	int read_size = read(fd, tmp_buffer, buffer_size);
-	if(read_size <= 0) {
+	if (read_size == 0) {
 		CleanupClient(fd);
 		return -1;
 	}
+	if (read_size < 0)
+		return 0;
 	client_[fd].request.parse(std::string(tmp_buffer,read_size));
 
 	if (client_[fd].request.isHeaderFinished()
@@ -148,15 +150,13 @@ int Client::ReadCgi(int pipe_fd, bool closed_event) {
 	int read_size = read(pipe_fd, buffer, buffer_size);
 	if (read_size > 0) {
 		client_[client_fd].cgi_output.append(buffer, read_size);
-		if (!closed_event)
-			return 0;
-		while ((read_size = read(pipe_fd, buffer, buffer_size)) > 0) {
-			client_[client_fd].cgi_output.append(buffer, read_size);
-		}
+		return 0;
 	}
 	if (read_size == 0) {
 		reached_eof = true;
 	}
+	if (read_size < 0 && !closed_event)
+		return 0;
 	if (!reached_eof && !closed_event)
 		return 0;
 
@@ -216,6 +216,8 @@ int Client::WriteCgi(int pipe_fd) {
 	if (write_size > 0) {
 		client_[client_fd].cgi_input.erase(0, write_size);
 	}
+	if (write_size < 0)
+		return 0;
 	if (client_[client_fd].cgi_input.empty()) {
 		pipe_to_client_.erase(pipe_fd);
 		client_[client_fd].cgi_write_fd = -1;
