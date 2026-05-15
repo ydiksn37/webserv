@@ -18,16 +18,18 @@ bool endswith(std::string str, std::string suffix) {
 	return str.substr(str.size() - suffix.size()) == suffix;
 }
 
-static std::string toLowerString(std::string str) {
-	for (size_t i = 0; i < str.length(); ++i)
-		str[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(str[i])));
-	return str;
-}
+namespace {
+	std::string toLowerString(std::string str) {
+		for (size_t i = 0; i < str.length(); ++i)
+			str[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(str[i])));
+		return str;
+	}
 
-static std::string sizeToString(size_t size) {
-	std::stringstream ss;
-	ss << size;
-	return ss.str();
+	std::string sizeToString(size_t size) {
+		std::stringstream ss;
+		ss << size;
+		return ss.str();
+	}
 }
 
 Client::Client(const Config& config):config_(config) {}
