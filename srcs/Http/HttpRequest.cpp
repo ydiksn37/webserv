@@ -5,113 +5,115 @@
 #include <cstdlib>
 #include <vector>
 
-static std::string	toLower(std::string s) {
-	for (std::string::iterator it = s.begin(); it != s.end(); ++it) {
-		*it = static_cast<char>(std::tolower(static_cast<unsigned char>(*it)));
+namespace {
+	std::string	toLower(std::string s) {
+		for (std::string::iterator it = s.begin(); it != s.end(); ++it) {
+			*it = static_cast<char>(std::tolower(static_cast<unsigned char>(*it)));
+		}
+		return (s);
 	}
-	return (s);
-}
 
-static std::string	trim(const std::string &s) {
-	size_t	first;
-	size_t	last;
+	std::string	trim(const std::string &s) {
+		size_t	first;
+		size_t	last;
 
-	first = s.find_first_not_of(" \t");
-	if (first == std::string::npos)
-		return ("");
-	last = s.find_last_not_of(" \t");
-	return (s.substr(first, (last - first + 1)));
-}
+		first = s.find_first_not_of(" \t");
+		if (first == std::string::npos)
+			return ("");
+		last = s.find_last_not_of(" \t");
+		return (s.substr(first, (last - first + 1)));
+	}
 
-static bool	isTokenChar(char c) {
-	if (std::isalnum(static_cast<unsigned char>(c)))
+	bool	isTokenChar(char c) {
+		if (std::isalnum(static_cast<unsigned char>(c)))
+			return (true);
+		return (c == '!' || c == '#' || c == '$' || c == '%' || c == '&'
+				|| c == '\'' || c == '*' || c == '+' || c == '-' || c == '.'
+				|| c == '^' || c == '_' || c == '`' || c == '|' || c == '~');
+	}
+
+	bool	isValidMethod(const std::string &method) {
+		if (method.empty())
+			return (false);
+		for (size_t i = 0; i < method.length(); ++i) {
+			if (!std::isupper(static_cast<unsigned char>(method[i])))
+				return (false);
+		}
 		return (true);
-	return (c == '!' || c == '#' || c == '$' || c == '%' || c == '&'
-		|| c == '\'' || c == '*' || c == '+' || c == '-' || c == '.'
-		|| c == '^' || c == '_' || c == '`' || c == '|' || c == '~');
-}
+	}
 
-static bool	isValidMethod(const std::string &method) {
-	if (method.empty())
-		return (false);
-	for (size_t i = 0; i < method.length(); ++i) {
-		if (!std::isupper(static_cast<unsigned char>(method[i])))
+	bool	isImplementedMethod(const std::string &method) {
+		return (method == "GET" || method == "POST" || method == "DELETE");
+	}
+
+	bool	isSupportedTransferEncoding(const std::string &value) {
+		std::string	normalized;
+
+		normalized.reserve(value.length());
+		for (size_t i = 0; i < value.length(); ++i) {
+			if (!std::isspace(static_cast<unsigned char>(value[i]))) {
+				normalized += static_cast<char>(
+						std::tolower(static_cast<unsigned char>(value[i])));
+			}
+		}
+		return (normalized == "chunked");
+	}
+
+	bool	parseDecimalSize(const std::string &value, size_t &result) {
+		if (value.empty())
 			return (false);
-	}
-	return (true);
-}
-
-static bool	isImplementedMethod(const std::string &method) {
-	return (method == "GET" || method == "POST" || method == "DELETE");
-}
-
-static bool	isSupportedTransferEncoding(const std::string &value) {
-	std::string	normalized;
-
-	normalized.reserve(value.length());
-	for (size_t i = 0; i < value.length(); ++i) {
-		if (!std::isspace(static_cast<unsigned char>(value[i]))) {
-			normalized += static_cast<char>(
-				std::tolower(static_cast<unsigned char>(value[i])));
+		result = 0;
+		for (size_t i = 0; i < value.length(); ++i) {
+			if (!std::isdigit(static_cast<unsigned char>(value[i])))
+				return (false);
+			result = result * 10 + static_cast<size_t>(value[i] - '0');
 		}
+		return (true);
 	}
-	return (normalized == "chunked");
-}
 
-static bool	parseDecimalSize(const std::string &value, size_t &result) {
-	if (value.empty())
-		return (false);
-	result = 0;
-	for (size_t i = 0; i < value.length(); ++i) {
-		if (!std::isdigit(static_cast<unsigned char>(value[i])))
+	bool	parseChunkSize(const std::string &line, size_t &result) {
+		size_t			semicolon;
+		std::string	sizePart;
+
+		semicolon = line.find(';');
+		sizePart = trim(line.substr(0, semicolon));
+		if (sizePart.empty())
 			return (false);
-		result = result * 10 + static_cast<size_t>(value[i] - '0');
-	}
-	return (true);
-}
+		result = 0;
+		for (size_t i = 0; i < sizePart.length(); ++i) {
+			char	c;
 
-static bool	parseChunkSize(const std::string &line, size_t &result) {
-	size_t	semicolon;
-	std::string	sizePart;
-
-	semicolon = line.find(';');
-	sizePart = trim(line.substr(0, semicolon));
-	if (sizePart.empty())
-		return (false);
-	result = 0;
-	for (size_t i = 0; i < sizePart.length(); ++i) {
-		char	c;
-
-		c = sizePart[i];
-		if (!std::isxdigit(static_cast<unsigned char>(c)))
-			return (false);
-		result *= 16;
-		if (std::isdigit(static_cast<unsigned char>(c)))
-			result += static_cast<size_t>(c - '0');
-		else {
-			result += static_cast<size_t>(std::tolower(static_cast<unsigned char>(c)) - 'a' + 10);
+			c = sizePart[i];
+			if (!std::isxdigit(static_cast<unsigned char>(c)))
+				return (false);
+			result *= 16;
+			if (std::isdigit(static_cast<unsigned char>(c)))
+				result += static_cast<size_t>(c - '0');
+			else {
+				result += static_cast<size_t>(std::tolower(static_cast<unsigned char>(c)) - 'a' + 10);
+			}
 		}
+		return (true);
 	}
-	return (true);
-}
 
-static bool	hasBalancedDquotes(const std::string &value) {
-	bool	escaped = false;
-	bool	in_quote = false;
+	bool	hasBalancedDquotes(const std::string &value) {
+		bool	escaped = false;
+		bool	in_quote = false;
 
-	for (size_t i = 0; i < value.length(); ++i) {
-		if (escaped) {
-			escaped = false;
-			continue ;
+		for (size_t i = 0; i < value.length(); ++i) {
+			if (escaped) {
+				escaped = false;
+				continue ;
+			}
+			if (value[i] == '\\') {
+				escaped = true;
+				continue ;
+			}
+			if (value[i] == '"')
+				in_quote = !in_quote;
 		}
-		if (value[i] == '\\') {
-			escaped = true;
-			continue ;
-		}
-		if (value[i] == '"')
-			in_quote = !in_quote;
+		return (!in_quote);
 	}
-	return (!in_quote);
 }
 
 HttpRequest::HttpRequest()
@@ -167,7 +169,7 @@ void	HttpRequest::parse(const std::string &raw_data) {
 	this->_buffer += raw_data;
 
 	if (this->_state == REQUEST_LINE || this->_state == HEADERS) {
-		if (this->_buffer.length() > 16384) {
+		if (this->_buffer.length() > (1 << 14)) {
 			this->_setError(431);
 			return;
 		}
@@ -186,8 +188,9 @@ void	HttpRequest::parse(const std::string &raw_data) {
 				if (line.empty())
 					continue ;
 				this->_parseRequestLine(line);
-			} else
+			} else {
 				this->_parseHeader(line);
+			}
 		} else if (this->_state == BODY) {
 			size_t	remaining;
 			size_t	toCopy;

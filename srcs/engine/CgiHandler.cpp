@@ -23,10 +23,12 @@ CgiHandler::~CgiHandler() {
 	if (_pipe_out[1] != -1) close(_pipe_out[1]);
 }
 
-static std::string sizeToStr(size_t size) {
-	std::stringstream ss;
-	ss << size;
-	return ss.str();
+namespace {
+	std::string sizeToStr(size_t size) {
+		std::stringstream ss;
+		ss << size;
+		return ss.str();
+	}
 }
 
 void CgiHandler::_setupEnv(const HttpRequest& request, 
