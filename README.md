@@ -128,9 +128,9 @@ request will fail until the configuration is adjusted.
 ## Resources
 
 References used while designing and validating the project:
-
-- RFC 9110, HTTP Semantics.
-- RFC 9112, HTTP/1.1.
+- [JUN's blog](https://jun-networks.hatenablog.com/entry/2022/12/05/234522)
+- [RFC 9110, HTTP Semantics.](https://tex2e.github.io/rfc-translater/html/rfc9110.html)
+- [RFC 9112, HTTP/1.1.](https://tex2e.github.io/rfc-translater/html/rfc9112.html)
 - The Linux manual pages for `socket`, `bind`, `listen`, `accept`, `epoll`,
   `fcntl`, `read`, `write`, `pipe`, `fork`, `dup2`, and `execve`.
 - The CGI/1.1 environment variable conventions.
