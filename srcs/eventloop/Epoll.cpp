@@ -50,7 +50,8 @@ void Epoll::Add(int fd,uint32_t events) {
 	ev.events = events;
 	ev.data.fd = fd;
 
-	epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &ev);
+	if (epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &ev) < 0)
+		throw EventLoopException(strerror(errno));
 }
 
 void Epoll::Mod(int fd,uint32_t events) {
@@ -59,11 +60,15 @@ void Epoll::Mod(int fd,uint32_t events) {
 	ev.events = events;
 	ev.data.fd = fd;
 
-	epoll_ctl(epfd_, EPOLL_CTL_MOD, fd, &ev);
+	if (epoll_ctl(epfd_, EPOLL_CTL_MOD, fd, &ev) < 0)
+		throw EventLoopException(strerror(errno));
 }
 
 void Epoll::Del(int fd) {
-	epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, NULL);
+	if (epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, NULL) < 0) {
+		close(fd);
+		throw EventLoopException(strerror(errno));
+	}
 	close(fd);
 }
 
