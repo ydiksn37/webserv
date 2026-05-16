@@ -227,6 +227,7 @@ void	HttpRequest::parse(const std::string &raw_data) {
 				}
 			}
 
+			// max_body_size
 			if (this->_body.length() + this->_chunkSize > this->_maxBodySize) {
 				this->_setError(413);
 				break ;

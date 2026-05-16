@@ -330,6 +330,11 @@ EngineResult	engine(const Config &config, HttpRequest &request, int local_port) 
 		request.setRoutingResolved(true);
 	}
 
+	if (request.isError()) {
+		applyErrorPage(result.response, request.getErrorCode(), route.location, route.server);
+		return (result);
+	}
+
 	if (!request.isCompleted())
 		return (result);
 

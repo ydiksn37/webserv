@@ -73,7 +73,7 @@ int Client::Read(int fd, std::vector<PipeInfo>& new_pipes) {
 
 		std::string conn = client_[fd].request.getHeader("connection");
 		for (std::size_t i = 0; i < conn.length(); ++i) conn[i] = std::tolower(conn[i]);
-		if (conn == "close")
+		if (conn == "close" || res.response.getStatusCode() == 413 || res.response.getStatusCode() == 400)
 			client_[fd].should_close = true;
 
 		if (res.is_cgi) {

@@ -171,6 +171,10 @@ const std::map<std::string, std::string>&	HttpResponse::getHeaders() const {
 	return (this->_headers);
 }
 
+int	HttpResponse::getStatusCode() const {
+	return (this->_statusCode);
+}
+
 std::string	HttpResponse::serialize() const {
 	std::stringstream	ss;
 
