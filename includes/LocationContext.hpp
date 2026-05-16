@@ -25,7 +25,7 @@ class LocationContext {
 		std::string													_upload_store;
 		std::vector<std::string>						_cgi_extensions;
 		std::map<std::string, std::string>	_cgi_info;
-		size_t															_client_max_body_size;
+		std::size_t													_client_max_body_size;
 		std::map<int, std::string>					_error_pages;
 
 	public:
@@ -49,7 +49,7 @@ class LocationContext {
 		void setUploadStore(const std::string& store);
 		void setCgiExtension(const std::string& ext);
 		void setCgiPath(const std::string& ext, const std::string& path);
-		void setClientMaxBodySize(size_t size);
+		void setClientMaxBodySize(std::size_t size);
 		void setErrorPage(int status_code, const std::string& path);
 
 		const std::string&												getPath() const;
@@ -64,7 +64,7 @@ class LocationContext {
 		const std::string&												getUploadStore() const;
 		const std::vector<std::string>&						getCgiExtensions() const;
 		const std::map<std::string, std::string>&	getCgiInfo() const;
-		size_t																		getClientMaxBodySize() const;
+		std::size_t																getClientMaxBodySize() const;
 		const std::map<int, std::string>&					getErrorPages() const;
 
 		void validate() const;

@@ -19,7 +19,7 @@ const std::vector<ServerContext>& Config::getServers() const {
 	return this->_servers;
 }
 
-void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i) {
+void Config::parseServerBlock(const std::vector<std::string>& tokens, std::size_t& i) {
 	ServerContext server;
 	bool index_specified = false;
 
@@ -35,7 +35,7 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 				throw ConfigException("Error: Unexpected EOF after listen.");
 			}
 			std::string listen_val = tokens[i];
-			size_t colon_pos = listen_val.find(':');
+			std::size_t colon_pos = listen_val.find(':');
 			long port;
 			if (colon_pos != std::string::npos) {
 				std::string port_str = listen_val.substr(colon_pos + 1);
@@ -129,7 +129,7 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 				throw ConfigException("Error: error_page requires a destination path.");
 			}
 			std::string path = tokens[i];
-			for (size_t j = 0; j < codes.size(); ++j) {
+			for (std::size_t j = 0; j < codes.size(); ++j) {
 				server.setErrorPage(codes[j], path);
 			}
 			i++;
@@ -149,7 +149,7 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, size_t& i)
 	throw ConfigException("Error: Server block not closed with '}'.");
 }
 
-void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& i, ServerContext& server) {
+void Config::parseLocationBlock(const std::vector<std::string>& tokens, std::size_t& i, ServerContext& server) {
 	i++;
 	if (i >= tokens.size()) {
 		throw ConfigException("Error: Unexpected EOF in location block.");
@@ -164,7 +164,7 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 
 	location.setRoot(server.getRoot());
 	const std::vector<std::string>& parent_index = server.getIndex();
-	for (size_t j = 0; j < parent_index.size(); ++j) {
+	for (std::size_t j = 0; j < parent_index.size(); ++j) {
 		location.setIndex(parent_index[j]);
 	}
 	location.setClientMaxBodySize(server.getClientMaxBodySize());
@@ -328,7 +328,7 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, size_t& 
 				throw ConfigException("Error: error_page requires a destination path.");
 			}
 			std::string path = tokens[i];
-			for (size_t j = 0; j < codes.size(); ++j) {
+			for (std::size_t j = 0; j < codes.size(); ++j) {
 				location.setErrorPage(codes[j], path);
 			}
 			i++;
@@ -356,7 +356,7 @@ void Config::validateConfiguration() const {
 	if (this->_servers.empty()) {
 		throw ConfigException("Error: No server blocks found in configuration.");
 	}
-	for (size_t i = 0; i < this->_servers.size(); ++i) {
+	for (std::size_t i = 0; i < this->_servers.size(); ++i) {
 		this->_servers[i].validate();
 	}
 }
@@ -405,7 +405,7 @@ std::vector<std::string> Config::tokenize(const std::string& content) {
 	std::vector<std::string> tokens;
 	std::string current_token = "";
 
-	for (size_t i = 0; i < content.length(); ++i) {
+	for (std::size_t i = 0; i < content.length(); ++i) {
 		char c = content[i];
 		if (c == '#') {
 			while (i < content.length() && content[i] != '\n') {
@@ -449,7 +449,7 @@ void Config::loadFile(const std::string& filename) {
 	if (tokens.empty()) {
 		throw ConfigException("Error: Configuration file is empty.");
 	}
-	for (size_t i = 0; i < tokens.size(); ++i) {
+	for (std::size_t i = 0; i < tokens.size(); ++i) {
 		if (tokens[i] == "server") {
 			parseServerBlock(tokens, i);
 		} else {
@@ -462,7 +462,7 @@ void Config::loadFile(const std::string& filename) {
 const ServerContext* Config::getServer(int port, const std::string& host_name) const {
 	const ServerContext* default_server = NULL;
 
-	for (size_t i = 0; i < this->_servers.size(); ++i) {
+	for (std::size_t i = 0; i < this->_servers.size(); ++i) {
 		if (this->_servers[i].getPort() == port) {
 			if (default_server == NULL) {
 				default_server = &this->_servers[i];
@@ -481,9 +481,9 @@ const LocationContext* Config::matchLocation(const ServerContext* server, const 
 	}
 
 	const LocationContext* best_match = NULL;
-	size_t max_match_length = 0;
+	std::size_t max_match_length = 0;
 	const std::vector<LocationContext>& locations = server->getLocations();
-	for (size_t i = 0; i < locations.size(); ++i) {
+	for (std::size_t i = 0; i < locations.size(); ++i) {
 		const std::string& path = locations[i].getPath();
 		if (uri.find(path) == 0) {
 			bool is_boundary_safe = (path == "/" || uri.length() == path.length() || uri[path.length()] == '/');

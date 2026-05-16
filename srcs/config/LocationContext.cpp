@@ -130,7 +130,7 @@ void LocationContext::setCgiPath(const std::string& ext, const std::string& path
 	this->_cgi_info[ext] = path;
 }
 
-void LocationContext::setClientMaxBodySize(size_t size) {
+void LocationContext::setClientMaxBodySize(std::size_t size) {
 	this->_client_max_body_size = size;
 }
 
@@ -200,7 +200,7 @@ const std::map<std::string, std::string>& LocationContext::getCgiInfo() const {
 	return this->_cgi_info;
 }
 
-size_t LocationContext::getClientMaxBodySize() const {
+std::size_t LocationContext::getClientMaxBodySize() const {
 	return this->_client_max_body_size;
 }
 

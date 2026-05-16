@@ -42,7 +42,7 @@ void ServerContext::setServerName(const std::string& name) {
 	this->_server_names.insert(name);
 }
 
-void ServerContext::setClientMaxBodySize(size_t size) {
+void ServerContext::setClientMaxBodySize(std::size_t size) {
 	this->_client_max_body_size = size;
 }
 
@@ -78,7 +78,7 @@ bool ServerContext::getIsServerNameIncluded(const std::string& name) const {
 	return this->_server_names.find(name) != this->_server_names.end();
 }
 
-size_t ServerContext::getClientMaxBodySize() const {
+std::size_t ServerContext::getClientMaxBodySize() const {
 	return this->_client_max_body_size;
 }
 
@@ -112,7 +112,7 @@ void ServerContext::validate() const {
 	if (this->_locations.empty()) {
 		throw std::runtime_error("Server must contain at least one 'location' block.");
 	}
-	for (size_t i = 0; i < this->_locations.size(); ++i) {
+	for (std::size_t i = 0; i < this->_locations.size(); ++i) {
 		this->_locations[i].validate();
 	}
 }

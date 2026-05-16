@@ -20,12 +20,12 @@ bool endswith(std::string str, std::string suffix) {
 
 namespace {
 	std::string toLowerString(std::string str) {
-		for (size_t i = 0; i < str.length(); ++i)
+		for (std::size_t i = 0; i < str.length(); ++i)
 			str[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(str[i])));
 		return str;
 	}
 
-	std::string sizeToString(size_t size) {
+	std::string sizeToString(std::size_t size) {
 		std::stringstream ss;
 		ss << size;
 		return ss.str();
@@ -72,7 +72,7 @@ int Client::Read(int fd, std::vector<PipeInfo>& new_pipes) {
 		EngineResult res = engine(config_, client_[fd].request, client_[fd].local_port);
 
 		std::string conn = client_[fd].request.getHeader("connection");
-		for (size_t i = 0; i < conn.length(); ++i) conn[i] = std::tolower(conn[i]);
+		for (std::size_t i = 0; i < conn.length(); ++i) conn[i] = std::tolower(conn[i]);
 		if (conn == "close")
 			client_[fd].should_close = true;
 
@@ -163,9 +163,9 @@ int Client::ReadCgi(int pipe_fd, bool closed_event) {
 		return 0;
 
 	std::string status_line = "200 OK";
-	size_t status_pos = client_[client_fd].cgi_output.find("Status: ");
+	std::size_t status_pos = client_[client_fd].cgi_output.find("Status: ");
 	if (status_pos != std::string::npos) {
-		size_t end_of_line = client_[client_fd].cgi_output.find("\n", status_pos);
+		std::size_t end_of_line = client_[client_fd].cgi_output.find("\n", status_pos);
 		if (end_of_line != std::string::npos) {
 			status_line = client_[client_fd].cgi_output.substr(status_pos + 8, end_of_line - (status_pos + 8));
 			if (!status_line.empty() && status_line[status_line.length() - 1] == '\r')
@@ -175,8 +175,8 @@ int Client::ReadCgi(int pipe_fd, bool closed_event) {
 	}
 
 	client_[client_fd].write_buffer.append("HTTP/1.1 " + status_line + "\r\n");
-	size_t header_end = client_[client_fd].cgi_output.find("\r\n\r\n");
-	size_t separator_len = 4;
+	std::size_t header_end = client_[client_fd].cgi_output.find("\r\n\r\n");
+	std::size_t separator_len = 4;
 	if (header_end == std::string::npos) {
 		header_end = client_[client_fd].cgi_output.find("\n\n");
 		separator_len = 2;

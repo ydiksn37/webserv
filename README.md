@@ -132,6 +132,8 @@ References used while designing and validating the project:
 - [RFC 9110, HTTP Semantics.](https://tex2e.github.io/rfc-translater/html/rfc9110.html)
 - [RFC 9112, HTTP/1.1.](https://tex2e.github.io/rfc-translater/html/rfc9112.html)
 - [RFC 6265, HTTP State Management Mechanism.](https://datatracker.ietf.org/doc/html/rfc6265)
+- [What is HttpRequest HttpResponse?](Https://qiita.com/minateru/items/8693538bbd0768855266)
+- [List of HTTP Status Codes](https://qiita.com/takuo_maeda/items/9cff0b03e74f8f600eee)
 - The Linux manual pages for `socket`, `bind`, `listen`, `accept`, `epoll`,
   `fcntl`, `read`, `write`, `pipe`, `fork`, `dup2`, and `execve`.
 - The CGI/1.1 environment variable conventions.

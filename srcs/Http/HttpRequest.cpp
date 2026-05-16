@@ -14,8 +14,8 @@ namespace {
 	}
 
 	std::string	trim(const std::string &s) {
-		size_t	first;
-		size_t	last;
+		std::size_t	first;
+		std::size_t	last;
 
 		first = s.find_first_not_of(" \t");
 		if (first == std::string::npos)
@@ -35,7 +35,7 @@ namespace {
 	bool	isValidMethod(const std::string &method) {
 		if (method.empty())
 			return (false);
-		for (size_t i = 0; i < method.length(); ++i) {
+		for (std::size_t i = 0; i < method.length(); ++i) {
 			if (!std::isupper(static_cast<unsigned char>(method[i])))
 				return (false);
 		}
@@ -50,7 +50,7 @@ namespace {
 		std::string	normalized;
 
 		normalized.reserve(value.length());
-		for (size_t i = 0; i < value.length(); ++i) {
+		for (std::size_t i = 0; i < value.length(); ++i) {
 			if (!std::isspace(static_cast<unsigned char>(value[i]))) {
 				normalized += static_cast<char>(
 						std::tolower(static_cast<unsigned char>(value[i])));
@@ -59,20 +59,20 @@ namespace {
 		return (normalized == "chunked");
 	}
 
-	bool	parseDecimalSize(const std::string &value, size_t &result) {
+	bool	parseDecimalSize(const std::string &value, std::size_t &result) {
 		if (value.empty())
 			return (false);
 		result = 0;
-		for (size_t i = 0; i < value.length(); ++i) {
+		for (std::size_t i = 0; i < value.length(); ++i) {
 			if (!std::isdigit(static_cast<unsigned char>(value[i])))
 				return (false);
-			result = result * 10 + static_cast<size_t>(value[i] - '0');
+			result = result * 10 + static_cast<std::size_t>(value[i] - '0');
 		}
 		return (true);
 	}
 
-	bool	parseChunkSize(const std::string &line, size_t &result) {
-		size_t			semicolon;
+	bool	parseChunkSize(const std::string &line, std::size_t &result) {
+		std::size_t	semicolon;
 		std::string	sizePart;
 
 		semicolon = line.find(';');
@@ -80,7 +80,7 @@ namespace {
 		if (sizePart.empty())
 			return (false);
 		result = 0;
-		for (size_t i = 0; i < sizePart.length(); ++i) {
+		for (std::size_t i = 0; i < sizePart.length(); ++i) {
 			char	c;
 
 			c = sizePart[i];
@@ -88,9 +88,9 @@ namespace {
 				return (false);
 			result *= 16;
 			if (std::isdigit(static_cast<unsigned char>(c)))
-				result += static_cast<size_t>(c - '0');
+				result += static_cast<std::size_t>(c - '0');
 			else {
-				result += static_cast<size_t>(std::tolower(static_cast<unsigned char>(c)) - 'a' + 10);
+				result += static_cast<std::size_t>(std::tolower(static_cast<unsigned char>(c)) - 'a' + 10);
 			}
 		}
 		return (true);
@@ -100,7 +100,7 @@ namespace {
 		bool	escaped = false;
 		bool	in_quote = false;
 
-		for (size_t i = 0; i < value.length(); ++i) {
+		for (std::size_t i = 0; i < value.length(); ++i) {
 			if (escaped) {
 				escaped = false;
 				continue ;
@@ -162,7 +162,7 @@ void	HttpRequest::_setError(int errorCode) {
 }
 
 void	HttpRequest::parse(const std::string &raw_data) {
-	size_t	pos;
+	std::size_t	pos;
 
 	if (this->_state == COMPLETE || this->_state == ERROR)
 		return ;
@@ -192,8 +192,8 @@ void	HttpRequest::parse(const std::string &raw_data) {
 				this->_parseHeader(line);
 			}
 		} else if (this->_state == BODY) {
-			size_t	remaining;
-			size_t	toCopy;
+			std::size_t	remaining;
+			std::size_t	toCopy;
 
 			if (this->_contentLength > this->_maxBodySize) {
 				this->_setError(413);
@@ -212,7 +212,7 @@ void	HttpRequest::parse(const std::string &raw_data) {
 				if (pos == std::string::npos)
 					break ;
 				std::string	sizeLine = this->_buffer.substr(0, pos);
-				size_t		chunkSize;
+				std::size_t		chunkSize;
 
 				if (!parseChunkSize(sizeLine, chunkSize)) {
 					this->_setError(400);
@@ -299,11 +299,11 @@ const std::string&	HttpRequest::getVersion() const { return (this->_version); }
 
 const std::string&	HttpRequest::getBody() const { return (this->_body); }
 
-size_t				HttpRequest::getContentLength() const { return (this->_contentLength); }
+std::size_t				HttpRequest::getContentLength() const { return (this->_contentLength); }
 
 int					HttpRequest::getErrorCode() const { return (this->_errorCode); }
 
-void	HttpRequest::setMaxBodySize(size_t max) {
+void	HttpRequest::setMaxBodySize(std::size_t max) {
 	this->_maxBodySize = max;
 	if ((this->_hasContentLength && this->_contentLength > this->_maxBodySize)
 		|| this->_body.length() > this->_maxBodySize) {
@@ -312,7 +312,7 @@ void	HttpRequest::setMaxBodySize(size_t max) {
 }
 
 bool	HttpRequest::isMethodAllowed(const std::vector<std::string>& allowedMethods) const {
-	for (size_t i = 0; i < allowedMethods.size(); ++i) {
+	for (std::size_t i = 0; i < allowedMethods.size(); ++i) {
 		if (this->_method == allowedMethods[i])
 			return (true);
 	}
@@ -333,8 +333,8 @@ const std::map<std::string, std::string>&	HttpRequest::getHeaders() const {
 }
 
 void	HttpRequest::_parseRequestLine(std::string& line) {
-	size_t	first_space;
-	size_t	second_space;
+	std::size_t	first_space;
+	std::size_t	second_space;
 
 	first_space = line.find(' ');
 	if (first_space == std::string::npos || first_space == 0) {
@@ -378,7 +378,7 @@ void	HttpRequest::_parseRequestLine(std::string& line) {
 		this->_setError(414);
 		return ;
 	}
-	size_t	query_pos = this->_uri.find('?');
+	std::size_t	query_pos = this->_uri.find('?');
 	if (query_pos != std::string::npos) {
 		this->_path = this->_uri.substr(0, query_pos);
 		this->_query = this->_uri.substr(query_pos + 1);
@@ -391,7 +391,7 @@ void	HttpRequest::_parseRequestLine(std::string& line) {
 }
 
 void	HttpRequest::_parseHeader(std::string& line) {
-	size_t			colon;
+	std::size_t			colon;
 	std::string	key;
 	std::string	rawKey;
 	std::string	value;
@@ -430,7 +430,7 @@ void	HttpRequest::_parseHeader(std::string& line) {
 	}
 	key = ::toLower(rawKey);
 	value = ::trim(line.substr(colon + 1));
-	for (size_t i = 0; i < key.length(); ++i) {
+	for (std::size_t i = 0; i < key.length(); ++i) {
 		if (!isTokenChar(key[i])) {
 			this->_setError(400);
 			return ;
@@ -441,7 +441,7 @@ void	HttpRequest::_parseHeader(std::string& line) {
 		return ;
 	}
 	if (key == "content-length") {
-		size_t	contentLength;
+		std::size_t	contentLength;
 
 		if (!parseDecimalSize(value, contentLength)) {
 			this->_setError(400);
@@ -481,7 +481,7 @@ void	HttpRequest::_normalizePath() {
 		if (segment == "..") { if (!segments.empty()) segments.pop_back(); }
 		else segments.push_back(segment);
 	}
-	for (size_t i = 0; i < segments.size(); ++i) res += "/" + segments[i];
+	for (std::size_t i = 0; i < segments.size(); ++i) res += "/" + segments[i];
 	if (res == "") res = "/";
 	if (this->_path.length() > 1 && this->_path[this->_path.length() - 1] == '/') res += "/";
 	this->_path = res;

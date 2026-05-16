@@ -50,7 +50,7 @@ void EventLoop(const Config& config) {
 						if(client.Read(fd, new_pipes) < 0)
 							ep.Del(fd);
 						else {
-							for (size_t j = 0; j < new_pipes.size(); ++j)
+							for (std::size_t j = 0; j < new_pipes.size(); ++j)
 								ep.Add(new_pipes[j].fd, new_pipes[j].events);
 							if(client.WriteBegin(fd))
 								ep.Mod(fd, EPOLLIN | EPOLLOUT);
