@@ -256,14 +256,13 @@ std::vector<int> Client::HandleCgiTimeout() {
 			HttpResponse err;
 			err.setStatusCode(504);
 			it->second.write_buffer.append(err.serialize());
+			timed_out_fds.push_back(it->first);
 			if (it->second.cgi_read_fd != -1) {
 				pipe_to_client_.erase(it->second.cgi_read_fd);
-				timed_out_fds.push_back(it->second.cgi_read_fd);
 				it->second.cgi_read_fd = -1;
 			}
 			if (it->second.cgi_write_fd != -1) {
 				pipe_to_client_.erase(it->second.cgi_write_fd);
-				timed_out_fds.push_back(it->second.cgi_write_fd);
 				it->second.cgi_write_fd = -1;
 			}
 			if (it->second.cgi_pid != -1) {

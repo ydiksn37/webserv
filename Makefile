@@ -60,7 +60,9 @@ fclean: clean
 	@$(RM) $(NAME)
 	@echo "$(L_GREEN)✅ fclean done$(RESET)\n"
 
-re: fclean all
+re:
+	$(MAKE) fclean
+	$(MAKE) all
 
 run: all
 	@$(MAKE) $(MAKE_FLAGS) clean -s

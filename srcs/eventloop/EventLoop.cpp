@@ -14,7 +14,7 @@ void EventLoop(const Config& config) {
 
 		std::vector<int> timed_out_fds = client.HandleCgiTimeout();
 		for (size_t i = 0; i < timed_out_fds.size(); ++i) {
-			ep.Del(timed_out_fds[i]);
+			ep.Mod(timed_out_fds[i], EPOLLIN | EPOLLOUT);
 		}
 
 		for(unsigned i = 0; i < events.size(); i++) {
