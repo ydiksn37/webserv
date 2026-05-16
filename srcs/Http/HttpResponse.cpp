@@ -9,7 +9,7 @@ namespace {
 	std::string	htmlEscape(const std::string &value) {
 		std::string	escaped;
 
-		for (size_t i = 0; i < value.length(); ++i) {
+		for (std::size_t i = 0; i < value.length(); ++i) {
 			if (value[i] == '&')
 				escaped += "&amp;";
 			else if (value[i] == '<')
@@ -53,6 +53,8 @@ std::map<int, std::string>		HttpResponse::_initStatusMessages() {
 
 	m[100] = "Continue";
 	m[101] = "Switching Protocols";
+	m[102] = "Processing";
+	m[103] = "Early Hints";
 	m[200] = "OK";
 	m[201] = "Created";
 	m[202] = "Accepted";
@@ -87,7 +89,10 @@ std::map<int, std::string>		HttpResponse::_initStatusMessages() {
 	m[416] = "Range Not Satisfiable";
 	m[417] = "Expectation Failed";
 	m[421] = "Misdirected Request";
+	m[422] = "Unprocessable Entity";
+	m[425] = "Too Early";
 	m[426] = "Upgrade Required";
+	m[429] = "Too many Requests";
 	m[431] = "Request Header Fields Too Large";
 	m[500] = "Internal Server Error";
 	m[501] = "Not Implemented";
@@ -95,6 +100,11 @@ std::map<int, std::string>		HttpResponse::_initStatusMessages() {
 	m[503] = "Service Unavailable";
 	m[504] = "Gateway Timeout";
 	m[505] = "HTTP Version Not Supported";
+	m[506] = "Variant Also Negotiates";
+	m[507] = "Insufficient Storage";
+	m[508] = "Loop Detected";
+	m[510] = "Not Extended";
+	m[511] = "Network Authentication Required";
 	return (m);
 }
 
@@ -200,7 +210,7 @@ std::string	HttpResponse::_normalizeHeaderKey(const std::string& key) const {
 
 	normalized = key;
 	capitalize_next = true;
-	for (size_t i = 0; i < normalized.length(); ++i) {
+	for (std::size_t i = 0; i < normalized.length(); ++i) {
 		if (capitalize_next) {
 			normalized[i] = static_cast<char>(
 				std::toupper(static_cast<unsigned char>(normalized[i])));
@@ -269,7 +279,7 @@ std::string	HttpResponse::generateDirectoryListing(const std::string& path, cons
 
 std::string	HttpResponse::getContentType(const std::string& path)
 {
-	size_t	dot_pos;
+	std::size_t	dot_pos;
 
 	dot_pos = path.find_last_of('.');
 	if (dot_pos == std::string::npos)

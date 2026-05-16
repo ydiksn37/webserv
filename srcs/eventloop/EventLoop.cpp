@@ -13,7 +13,7 @@ void EventLoop(const Config& config) {
 		const std::vector<epoll_event>& events = ep.WaitEvents(1000);
 
 		std::vector<int> timed_out_fds = client.HandleCgiTimeout();
-		for (size_t i = 0; i < timed_out_fds.size(); ++i) {
+		for (std::size_t i = 0; i < timed_out_fds.size(); ++i) {
 			ep.Del(timed_out_fds[i]);
 		}
 
@@ -50,7 +50,7 @@ void EventLoop(const Config& config) {
 						if(client.Read(fd, new_pipes) < 0)
 							ep.Del(fd);
 						else {
-							for (size_t j = 0; j < new_pipes.size(); ++j)
+							for (std::size_t j = 0; j < new_pipes.size(); ++j)
 								ep.Add(new_pipes[j].fd, new_pipes[j].events);
 							if(client.WriteBegin(fd))
 								ep.Mod(fd, EPOLLIN | EPOLLOUT);

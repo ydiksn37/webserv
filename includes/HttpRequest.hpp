@@ -29,9 +29,9 @@ class HttpRequest {
 		int						getErrorCode() const;
 		bool					isHeaderFinished() const;
 		bool					isRoutingResolved() const;
-		size_t				getContentLength() const;
+		std::size_t		getContentLength() const;
 
-		void				setMaxBodySize(size_t max);
+		void				setMaxBodySize(std::size_t max);
 		void				setRoutingResolved(bool resolved);
 
 		bool				isMethodAllowed(const std::vector<std::string>& allowedMethods) const;
@@ -58,11 +58,11 @@ class HttpRequest {
 		std::string													_body;
 		std::string													_buffer;
 		std::string													_empty;
-		size_t															_chunkSize;
-		size_t															_contentLength;
+		std::size_t													_chunkSize;
+		std::size_t													_contentLength;
 		bool																_hasContentLength;
 		int																	_errorCode;
-		size_t															_maxBodySize;
+		std::size_t													_maxBodySize;
 
 		void	_setError(int errorCode);
 		void	_parseRequestLine(std::string &line);
