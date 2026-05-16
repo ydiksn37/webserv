@@ -16,7 +16,7 @@ class ServerContext {
 
 		void setPort(int port);
 		void setServerName(const std::string& name);
-		void setClientMaxBodySize(size_t size);
+		void setClientMaxBodySize(std::size_t size);
 		void setErrorPage(int status_code, const std::string& path);
 		void setRoot(const std::string& root);
 		void setIndex(const std::string& index);
@@ -26,7 +26,7 @@ class ServerContext {
 		int																	getPort() const;
 		const std::set<std::string>&				getServerNames() const;
 		bool																getIsServerNameIncluded(const std::string& name) const;
-		size_t															getClientMaxBodySize() const;
+		std::size_t													getClientMaxBodySize() const;
 		const std::map<int, std::string>&		getErrorPages() const;
 		const std::string&									getRoot() const;
 		const std::vector<std::string>&			getIndex() const;
@@ -37,7 +37,7 @@ class ServerContext {
 	private:
 		int														_port;
 		std::set<std::string>					_server_names;
-		size_t												_client_max_body_size;
+		std::size_t										_client_max_body_size;
 		std::map<int, std::string>		_error_pages;
 		std::string										_root;
 		std::vector<std::string>			_index;
