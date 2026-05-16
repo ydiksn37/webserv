@@ -5,22 +5,24 @@
 #include <sys/stat.h>
 #include <fstream>
 
-static std::string	htmlEscape(const std::string &value) {
-	std::string	escaped;
+namespace {
+	std::string	htmlEscape(const std::string &value) {
+		std::string	escaped;
 
-	for (size_t i = 0; i < value.length(); ++i) {
-		if (value[i] == '&')
-			escaped += "&amp;";
-		else if (value[i] == '<')
-			escaped += "&lt;";
-		else if (value[i] == '>')
-			escaped += "&gt;";
-		else if (value[i] == '"')
-			escaped += "&quot;";
-		else
-			escaped += value[i];
+		for (size_t i = 0; i < value.length(); ++i) {
+			if (value[i] == '&')
+				escaped += "&amp;";
+			else if (value[i] == '<')
+				escaped += "&lt;";
+			else if (value[i] == '>')
+				escaped += "&gt;";
+			else if (value[i] == '"')
+				escaped += "&quot;";
+			else
+				escaped += value[i];
+		}
+		return (escaped);
 	}
-	return (escaped);
 }
 
 HttpResponse::HttpResponse() : _version("HTTP/1.1"), _statusCode(200), _reasonPhrase("OK") {

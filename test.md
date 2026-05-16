@@ -331,7 +331,8 @@ curl -v http://localhost:8080/
 確認点:
 
 - `HTTP/1.1 200 OK` が返ること
-- `Webserv Test Page` が本文に含まれること
+- `localhost:8080` が本文に含まれること
+- `Selected server: first server block in example.conf.` が本文に含まれること
 
 ### server_name による server 選択
 
@@ -346,6 +347,8 @@ curl -v -H 'Host: mytest.local' http://127.0.0.1:8080/
 確認点:
 
 - いずれも `HTTP/1.1 200 OK` が返ること
+- `Host: example.com` では `example.com:8080` が本文に含まれること
+- `Host: www.example.com` と `Host: mytest.local` では `www.example.com:8080` が本文に含まれること
 - server_name が一致しない場合は、その port の最初の server が default server として使われること
 
 default server の確認:
@@ -357,7 +360,7 @@ curl -v -H 'Host: unknown.local' http://127.0.0.1:8080/
 確認点:
 
 - `HTTP/1.1 200 OK` が返ること
-- port 8080 の最初の server block が使われること
+- `localhost:8080` が本文に含まれ、port 8080 の最初の server block が使われること
 
 ### 別 port の server
 
@@ -370,7 +373,7 @@ curl -v -H 'Host: webserv.local' http://127.0.0.1:8081/
 確認点:
 
 - `HTTP/1.1 200 OK` が返ること
-- port 8081 の server block が使われること
+- `webserv.local:8081` が本文に含まれ、port 8081 の server block が使われること
 
 ### Redirect
 
@@ -384,6 +387,17 @@ curl -v -H 'Host: www.example.com' http://127.0.0.1:8080/old-page
 
 - `HTTP/1.1 301 Moved Permanently` が返ること
 - `Location: /new-page.html` ヘッダーが含まれること
+
+redirect 先の HTML も確認できます。
+
+```bash
+curl -v -H 'Host: www.example.com' http://127.0.0.1:8080/new-page.html
+```
+
+確認点:
+
+- `HTTP/1.1 200 OK` が返ること
+- `Redirect Target` が本文に含まれること
 
 ### Alias
 
