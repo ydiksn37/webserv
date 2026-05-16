@@ -13,8 +13,8 @@ void EventLoop(const Config& config) {
 		const std::vector<epoll_event>& events = ep.WaitEvents(1000);
 
 		std::vector<int> timed_out_fds = client.HandleCgiTimeout();
-		for (std::size_t i = 0; i < timed_out_fds.size(); ++i) {
-			ep.Del(timed_out_fds[i]);
+		for (size_t i = 0; i < timed_out_fds.size(); ++i) {
+			ep.Mod(timed_out_fds[i], EPOLLIN | EPOLLOUT);
 		}
 
 		for(unsigned i = 0; i < events.size(); i++) {
