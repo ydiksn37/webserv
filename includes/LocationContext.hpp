@@ -25,7 +25,7 @@ class LocationContext {
 		std::string													_upload_store;
 		std::vector<std::string>						_cgi_extensions;
 		std::map<std::string, std::string>	_cgi_info;
-		std::size_t															_client_max_body_size;
+		std::size_t													_client_max_body_size;
 		std::map<int, std::string>					_error_pages;
 
 	public:

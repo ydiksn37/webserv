@@ -72,7 +72,7 @@ namespace {
 
 	std::string	extractHostName(const HttpRequest &request) {
 		std::string	host = request.getHeader("host");
-		std::size_t			colon = host.find(':');
+		std::size_t	colon = host.find(':');
 
 		if (colon == std::string::npos)
 			return (host);

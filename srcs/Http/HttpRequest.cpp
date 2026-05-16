@@ -72,7 +72,7 @@ namespace {
 	}
 
 	bool	parseChunkSize(const std::string &line, std::size_t &result) {
-		std::size_t			semicolon;
+		std::size_t	semicolon;
 		std::string	sizePart;
 
 		semicolon = line.find(';');
