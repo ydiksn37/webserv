@@ -269,7 +269,7 @@ namespace {
 			applyErrorPage(response, 403, &location, &server);
 			return response;
 		}
-		if (remove(full_path.c_str()) == 0)
+		if (std::remove(full_path.c_str()) == 0)
 			response.setStatusCode(204);
 		else
 			applyErrorPage(response, 500, &location, &server);

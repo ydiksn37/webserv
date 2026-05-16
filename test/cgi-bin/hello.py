@@ -1,6 +1,6 @@
 import os
 
-print("Content-Type: text/html\r\n\r\n")
+print("Content-Type: text/html\r\n\r\n",end="")
 print("<html><body>")
 print("<h1>Hello from Python CGI!</h1>")
 print("<p>REQUEST_METHOD: {}</p>".format(os.environ.get("REQUEST_METHOD", "N/A")))
