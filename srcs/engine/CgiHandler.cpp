@@ -24,7 +24,7 @@ CgiHandler::~CgiHandler() {
 }
 
 namespace {
-	std::string sizeToStr(size_t size) {
+	std::string sizeToStr(std::size_t size) {
 		std::stringstream ss;
 		ss << size;
 		return ss.str();
@@ -76,7 +76,7 @@ char** CgiHandler::_getEnvp() {
 		_env_strings.push_back(it->first + "=" + it->second);
 	}
 	_envp.clear();
-	for (size_t i = 0; i < _env_strings.size(); ++i) {
+	for (std::size_t i = 0; i < _env_strings.size(); ++i) {
 		_envp.push_back(const_cast<char*>(_env_strings[i].c_str()));
 	}
 	_envp.push_back(NULL);
@@ -128,7 +128,7 @@ std::pair<int, int> CgiHandler::execute(const HttpRequest& request,
 		close(_pipe_in[0]);
 		close(_pipe_out[1]);
 
-		size_t last_slash = script_path.find_last_of('/');
+		std::size_t last_slash = script_path.find_last_of('/');
 		std::string script_arg = script_path;
 		if (last_slash != std::string::npos) {
 			if (chdir(script_path.substr(0, last_slash).c_str()) != 0) {

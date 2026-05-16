@@ -72,7 +72,7 @@ namespace {
 
 	std::string	extractHostName(const HttpRequest &request) {
 		std::string	host = request.getHeader("host");
-		size_t			colon = host.find(':');
+		std::size_t			colon = host.find(':');
 
 		if (colon == std::string::npos)
 			return (host);
@@ -121,7 +121,7 @@ namespace {
 	bool isCgi(const HttpRequest &request, const LocationContext &location, std::string &bin_path) {
 		const std::map<std::string, std::string> &cgi_info = location.getCgiInfo();
 		std::string path = request.getPath();
-		size_t dot = path.find_last_of('.');
+		std::size_t dot = path.find_last_of('.');
 		if (dot == std::string::npos) return false;
 		std::string ext = path.substr(dot);
 		std::map<std::string, std::string>::const_iterator it = cgi_info.find(ext);
@@ -167,7 +167,7 @@ namespace {
 			}
 
 			const std::vector<std::string>& indexes = location.getIndex();
-			for (size_t i = 0; i < indexes.size(); ++i) {
+			for (std::size_t i = 0; i < indexes.size(); ++i) {
 				std::string index_path = full_path + indexes[i];
 				if (fileExists(index_path) && !isDirectory(index_path)) {
 					response.setBodyFromFile(index_path);
@@ -206,7 +206,7 @@ namespace {
 	}
 
 	std::string getFilenameFromPath(const std::string& path) {
-		size_t pos = path.find_last_of('/');
+		std::size_t pos = path.find_last_of('/');
 		if (pos == std::string::npos)
 			return path;
 		return path.substr(pos + 1);
