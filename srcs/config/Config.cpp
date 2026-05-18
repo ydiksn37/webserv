@@ -30,112 +30,25 @@ void Config::parseServerBlock(const std::vector<std::string>& tokens, std::size_
 	i++;
 	while (i < tokens.size() && tokens[i] != "}") {
 		if (tokens[i] == "listen") {
-			i++;
-			if (i >= tokens.size()) {
-				throw ConfigException("Error: Unexpected EOF after listen.");
-			}
-			std::string listen_val = tokens[i];
-			std::size_t colon_pos = listen_val.find(':');
-			long port;
-			if (colon_pos != std::string::npos) {
-				std::string port_str = listen_val.substr(colon_pos + 1);
-				if (port_str.empty()) {
-					throw ConfigException("Error: Invalid listen format.");
-				}
-				port = parseLong(port_str);
-			}
-			else {
-				port = parseLong(listen_val);
-			}
-			if (port <= 0 || port > 65535) {
-				throw ConfigException("Error: Port out of range: " + tokens[i]);
-			}
-			server.setPort(static_cast<int>(port));
-			i++;
-			if (i >= tokens.size() || tokens[i] != ";") {
-				throw ConfigException("Error: Expected ';' after listen.");
-			}
+			handleListen(tokens, i, server);
 		}
 		else if (tokens[i] == "server_name") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: server_name requires at least one argument.");
-			}
-			while (i < tokens.size() && tokens[i] != ";") {
-				server.setServerName(tokens[i]);
-				i++;
-			}
-			if (i >= tokens.size() || tokens[i] != ";") {
-				throw ConfigException("Error: Expected ';' after server_name.");
-			}
+			handleServerName(tokens, i, server);
 		}
 		else if (tokens[i] == "root") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: root requires an argument.");
-			}
-			server.setRoot(tokens[i]);
-			i++;
-			if (i >= tokens.size() || tokens[i] != ";") {
-				throw ConfigException("Error: Expected ';' after root.");
-			}
+			handleRoot(tokens, i, server);
 		}
 		else if (tokens[i] == "index") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: index requires at least one argument.");
-			}
-			if (!index_specified) {
-				server.clearIndex();
-				index_specified = true;
-			}
-			while (i < tokens.size() && tokens[i] != ";") {
-				server.setIndex(tokens[i]);
-				i++;
-			}
-			if (i >= tokens.size() || tokens[i] != ";") {
-				throw ConfigException("Error: Expected ';' after index.");
-			}
+			handleIndex(tokens, i, server, index_specified);
 		}
 		else if (tokens[i] == "location") {
 			parseLocationBlock(tokens, i, server);
 		}
 		else if (tokens[i] == "client_max_body_size") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: client_max_body_size requires an argument.");
-			}
-			server.setClientMaxBodySize(parseUnsignedLong(tokens[i]));
-			i++;
-			if (i >= tokens.size() || tokens[i] != ";") {
-				throw ConfigException("Error: Expected ';' after client_max_body_size.");
-			}
+			handleClientMaxBodySize(tokens, i, server);
 		}
 		else if (tokens[i] == "error_page") {
-			i++;
-			std::vector<int> codes;
-			while (i < tokens.size() && tokens[i] != ";" && std::isdigit(tokens[i][0])) {
-				long code = parseLong(tokens[i]);
-				if (code < 300 || code > 599) {
-					throw ConfigException("Error: Invalid error code: " + tokens[i]);
-				}
-				codes.push_back(static_cast<int>(code));
-				i++;
-			}
-			if (codes.empty()) {
-				throw ConfigException("Error: error_page requires at least one status code.");
-			}
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: error_page requires a destination path.");
-			}
-			std::string path = tokens[i];
-			for (std::size_t j = 0; j < codes.size(); ++j) {
-				server.setErrorPage(codes[j], path);
-			}
-			i++;
-			if (i >= tokens.size() || tokens[i] != ";") {
-				throw ConfigException("Error: Expected ';' after error_page.");
-			}
+			handleErrorPage(tokens, i, server);
 		}
 		else {
 			throw ConfigException("Error: Unknown server directive '" + tokens[i] + "'");
@@ -180,158 +93,41 @@ void Config::parseLocationBlock(const std::vector<std::string>& tokens, std::siz
 	i++;
 	while (i < tokens.size() && tokens[i] != "}") {
 		if (tokens[i] == "allow_methods" || tokens[i] == "allow_method") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: allow_methods requires at least one argument.");
-			}
-			if (!allowed_methods_specified) {
-				location.clearAllowedMethods();
-				allowed_methods_specified = true;
-			}
-			while (i < tokens.size() && tokens[i] != ";") {
-				if (tokens[i] != "GET" && tokens[i] != "POST" && tokens[i] != "DELETE") {
-					throw ConfigException("Error: Invalid or unsupported HTTP method '" + tokens[i] + "' in allow_methods.");
-				}
-				location.setAllowedMethod(tokens[i]);
-				i++;
-			}
+			handleAllowMethods(tokens, i, location, allowed_methods_specified);
 		}
 		else if (tokens[i] == "root") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: root requires an argument.");
-			}
-			location.setRoot(tokens[i]);
+			handleRoot(tokens, i, location);
 			location_root_specified = true;
-			i++;
 		}
 		else if (tokens[i] == "alias") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: alias requires an argument.");
-			}
-			location.setAlias(tokens[i]);
-			alias_specified = true;
-			i++;
+			handleAlias(tokens, i, location, alias_specified);
 		}
 		else if (tokens[i] == "index") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: index requires at least one argument.");
-			}
-			if (!index_specified) {
-				location.clearIndex();
-				index_specified = true;
-			}
-			while (i < tokens.size() && tokens[i] != ";") {
-				location.setIndex(tokens[i]);
-				i++;
-			}
+			handleIndex(tokens, i, location, index_specified);
 		}
 		else if (tokens[i] == "autoindex") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: autoindex requires 'on' or 'off'.");
-			}
-			if (tokens[i] != "on" && tokens[i] != "off") {
-				throw ConfigException("Error: autoindex must be 'on' or 'off'.");
-			}
-			location.setAutoindex(tokens[i] == "on");
-			i++;
+			handleAutoindex(tokens, i, location);
 		}
 		else if (tokens[i] == "return") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: return requires a status code and URL.");
-			}
-			int code = static_cast<int>(parseLong(tokens[i]));
-			if (code < 300 || code > 599) {
-				throw ConfigException("Error: Invalid redirect code: " + tokens[i]);
-			}
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: return requires a URL.");
-			}
-			location.setRedirect(code, tokens[i]);
-			redirect_specified = true;
-			i++;
+			handleReturn(tokens, i, location, redirect_specified);
 		}
 		else if (tokens[i] == "upload_enable") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: upload_enable requires 'on' or 'off'.");
-			}
-			if (tokens[i] != "on" && tokens[i] != "off") {
-				throw ConfigException("Error: upload_enable must be 'on' or 'off'.");
-			}
-			location.setUploadEnable(tokens[i] == "on");
-			i++;
+			handleUploadEnable(tokens, i, location);
 		}
 		else if (tokens[i] == "upload_store") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: upload_store requires a path.");
-			}
-			location.setUploadStore(tokens[i]);
-			i++;
+			handleUploadStore(tokens, i, location);
 		}
 		else if (tokens[i] == "cgi_extension") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: cgi_extension requires at least one argument.");
-			}
-			while (i < tokens.size() && tokens[i] != ";") {
-				if (tokens[i][0] != '.') {
-					throw ConfigException("Error: CGI extension must start with a dot: " + tokens[i]);
-				}
-				location.setCgiExtension(tokens[i]);
-				i++;
-			}
+			handleCgiExtension(tokens, i, location);
 		}
 		else if (tokens[i] == "cgi_path") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: cgi_path requires an extension and a path.");
-			}
-			std::string ext = tokens[i];
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: cgi_path requires a path.");
-			}
-			std::string path = tokens[i];
-			location.setCgiPath(ext, path);
-			i++;
+			handleCgiPath(tokens, i, location);
 		}
 		else if (tokens[i] == "client_max_body_size") {
-			i++;
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: client_max_body_size requires an argument.");
-			}
-			location.setClientMaxBodySize(parseUnsignedLong(tokens[i]));
-			i++;
+			handleClientMaxBodySize(tokens, i, location);
 		}
 		else if (tokens[i] == "error_page") {
-			i++;
-			std::vector<int> codes;
-			while (i < tokens.size() && tokens[i] != ";" && std::isdigit(tokens[i][0])) {
-				long code = parseLong(tokens[i]);
-				if (code < 300 || code > 599) {
-					throw ConfigException("Error: Invalid error code: " + tokens[i]);
-				}
-				codes.push_back(static_cast<int>(code));
-				i++;
-			}
-			if (codes.empty()) {
-				throw ConfigException("Error: error_page requires at least one status code.");
-			}
-			if (i >= tokens.size() || tokens[i] == ";") {
-				throw ConfigException("Error: error_page requires a destination path.");
-			}
-			std::string path = tokens[i];
-			for (std::size_t j = 0; j < codes.size(); ++j) {
-				location.setErrorPage(codes[j], path);
-			}
-			i++;
+			handleErrorPage(tokens, i, location);
 		}
 		else {
 			throw ConfigException("Error: Unknown location directive '" + tokens[i] + "'");
@@ -359,46 +155,6 @@ void Config::validateConfiguration() const {
 	for (std::size_t i = 0; i < this->_servers.size(); ++i) {
 		this->_servers[i].validate();
 	}
-}
-
-long Config::parseLong(const std::string& str) const {
-	char* endptr;
-	errno = 0;
-	long val = std::strtol(str.c_str(), &endptr, 10);
-
-	if (errno == ERANGE) {
-		throw ConfigException("Error: Number out of range: " + str);
-	}
-	if (*endptr != '\0') {
-		throw ConfigException("Error: Invalid number format: " + str);
-	}
-	return val;
-}
-
-unsigned long Config::parseUnsignedLong(const std::string& str) const {
-	if (str.empty() || !std::isdigit(str[0])) {
-		throw ConfigException("Error: Invalid unsigned number format: " + str);
-	}
-	char* endptr;
-	errno = 0;
-	unsigned long val = std::strtoul(str.c_str(), &endptr, 10);
-
-	if (errno == ERANGE) {
-		throw ConfigException("Error: Number out of range: " + str);
-	}
-	if (*endptr != '\0') {
-		std::string suffix = endptr;
-		if (suffix == "k" || suffix == "K") {
-			val *= 1024;
-		} else if (suffix == "m" || suffix == "M") {
-			val *= 1024 * 1024;
-		} else if (suffix == "g" || suffix == "G") {
-			val *= 1024 * 1024 * 1024;
-		} else {
-			throw ConfigException("Error: Invalid unsigned number format: " + str);
-		}
-	}
-	return val;
 }
 
 std::vector<std::string> Config::tokenize(const std::string& content) {
