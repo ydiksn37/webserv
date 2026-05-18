@@ -20,6 +20,7 @@ class HttpResponse {
 		void			setRedirect(int code, const std::string& location);
 
 		const std::map<std::string, std::string>&	getHeaders() const;
+		int																				getStatusCode() const;
 		std::string																serialize() const;
 
 	private:
