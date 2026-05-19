@@ -1,6 +1,8 @@
-#ifndef SOCKET
-#define SOCKET
+#ifndef SOCKET_HPP
+# define SOCKET_HPP
 
-int CreateSocket(int port);
+# include <string>
+
+int CreateSocket(int port, const std::string& host);
 
 #endif
