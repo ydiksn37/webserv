@@ -3,6 +3,7 @@
 
 ServerContext::ServerContext()
 	: _port(80),
+		_host("0.0.0.0"),
 		_server_names(),
 		_client_max_body_size(1048576),
 		_error_pages(),
@@ -14,6 +15,7 @@ ServerContext::~ServerContext() {}
 
 ServerContext::ServerContext(const ServerContext& other)
 	: _port(other._port), 
+		_host(other._host),
 		_server_names(other._server_names),
 		_client_max_body_size(other._client_max_body_size),
 		_error_pages(other._error_pages),
@@ -24,6 +26,7 @@ ServerContext::ServerContext(const ServerContext& other)
 ServerContext& ServerContext::operator=(const ServerContext& other) {
 	if (this != &other) {
 		this->_port = other._port;
+		this->_host = other._host;
 		this->_server_names = other._server_names;
 		this->_client_max_body_size = other._client_max_body_size;
 		this->_error_pages = other._error_pages;
@@ -36,6 +39,10 @@ ServerContext& ServerContext::operator=(const ServerContext& other) {
 
 void ServerContext::setPort(int port) {
 	this->_port = port;
+}
+
+void ServerContext::setHost(const std::string& host) {
+	this->_host = host;
 }
 
 void ServerContext::setServerName(const std::string& name) {
@@ -68,6 +75,10 @@ void ServerContext::setLocation(const LocationContext& location) {
 
 int ServerContext::getPort() const{
 	return this->_port;
+}
+
+const std::string& ServerContext::getHost() const {
+	return this->_host;
 }
 
 const std::set<std::string>& ServerContext::getServerNames() const {

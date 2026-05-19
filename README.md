@@ -57,18 +57,13 @@ The default path is:
 configurations/default.conf
 ```
 
-Run the unit tests:
-
-```sh
-make test
-```
-
 Available example configurations:
 
 - `configurations/default.conf`: minimal static server on port `8080`.
 - `configurations/test.conf`: static files, CGI, upload, delete, chunked request body tests.
 - `configurations/cgi.conf`: CGI-focused server on port `8082`.
 - `configurations/example.conf`: multiple server blocks, multiple ports, aliases, redirects, upload, CGI.
+- `configurations/listen_ip.conf`: multiple listen ip, Selecting the appropriate IP address, creating a socket.
 
 Example requests:
 

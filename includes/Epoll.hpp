@@ -11,7 +11,7 @@ class Epoll {
 		Epoll();
 		Epoll(const Config& config);
 		~Epoll();
-		void AddListener(int port);
+		void AddListener(int port, const std::string& host);
 		void Add(int fd,uint32_t events);
 		void Mod(int fd,uint32_t events);
 		void Del(int fd);

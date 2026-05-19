@@ -25,20 +25,19 @@ Epoll::Epoll(const Config& config) {
 	events_.resize(max_events_);
 
 	std::vector<ServerContext> servers = config.getServers();
-	std::vector<int> ports;
+	std::set<std::pair<std::string, int> > listen_pairs;
 
 	for(unsigned i = 0; i < servers.size(); i++)
-		ports.push_back(servers[i].getPort());
-	std::sort(ports.begin(), ports.end());
-	ports.erase(std::unique(ports.begin(), ports.end()), ports.end());
-	for(unsigned i = 0; i < ports.size(); i++)
-		AddListener(ports[i]);
+		listen_pairs.insert(std::make_pair(servers[i].getHost(), servers[i].getPort()));
+
+	for(std::set<std::pair<std::string, int> >::iterator it = listen_pairs.begin(); it != listen_pairs.end(); ++it)
+		AddListener(it->second, it->first);
 }
 
 Epoll::~Epoll() {}
 
-void Epoll::AddListener(int port) {
-	int listen_fd = CreateSocket(port);
+void Epoll::AddListener(int port, const std::string& host) {
+	int listen_fd = CreateSocket(port, host);
 	Add(listen_fd, EPOLLIN);
 	listen_fds_.insert(listen_fd);
 	fd_to_port_[listen_fd] = port;

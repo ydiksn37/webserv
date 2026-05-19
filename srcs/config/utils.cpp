@@ -9,6 +9,10 @@ void Config::handleListen(const std::vector<std::string>& tokens, std::size_t& i
 	std::size_t colon_pos = listen_val.find(':');
 	long port;
 	if (colon_pos != std::string::npos) {
+		std::string host = listen_val.substr(0, colon_pos);
+		if (!host.empty()) {
+			server.setHost(host);
+		}
 		std::string port_str = listen_val.substr(colon_pos + 1);
 		if (port_str.empty()) {
 			throw ConfigException("Error: Invalid listen format.");
