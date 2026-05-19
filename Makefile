@@ -13,7 +13,7 @@ MAKE_FLAGS  += --no-print-directory
 SRCDIR      = srcs
 SRCS        = srcs/eventloop/EventLoop.cpp srcs/eventloop/Client.cpp \
               srcs/eventloop/Socket.cpp srcs/eventloop/Epoll.cpp \
-              srcs/config/Config.cpp srcs/config/LocationContext.cpp srcs/config/ServerContext.cpp \
+              srcs/config/Config.cpp srcs/config/LocationContext.cpp srcs/config/ServerContext.cpp srcs/config/utils.cpp \
               srcs/engine/engine.cpp srcs/engine/CgiHandler.cpp srcs/Http/HttpResponse.cpp srcs/Http/HttpRequest.cpp srcs/main.cpp
 
 OBJS        = $(SRCS:%.cpp=%.o)
