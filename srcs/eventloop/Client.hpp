@@ -32,7 +32,6 @@ class Client {
 
 	private:
 		static const unsigned buffer_size = 8096;
-		void GenResponse(int fd, std::string request);
 		Config config_;
 		struct ClientData {
 			HttpRequest request;
