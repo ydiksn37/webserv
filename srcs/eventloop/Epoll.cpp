@@ -40,7 +40,7 @@ void Epoll::AddListener(int port, const std::string& host) {
 	int listen_fd = CreateSocket(port, host);
 	Add(listen_fd, EPOLLIN);
 	listen_fds_.insert(listen_fd);
-	fd_to_port_[listen_fd] = port;
+	fd_to_endpoint_[listen_fd] = ListenEndpoint(host, port);
 }
 
 void Epoll::Add(int fd,uint32_t events) {
@@ -71,13 +71,13 @@ void Epoll::Del(int fd) {
 	close(fd);
 }
 
-void Epoll::Accept(int fd, int& client_fd, int& port) {
+void Epoll::Accept(int fd, int& client_fd, ListenEndpoint& endpoint) {
 	client_fd = accept(fd, NULL, NULL);
 	if(client_fd < 0)
 		throw EventLoopException(strerror(errno));
 	fcntl(client_fd, F_SETFL, O_NONBLOCK);
 	Add(client_fd, EPOLLIN);
-	port = fd_to_port_[fd];
+	endpoint = fd_to_endpoint_[fd];
 }
 
 const std::vector<epoll_event>& Epoll::WaitEvents(int timeout) {

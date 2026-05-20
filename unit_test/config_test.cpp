@@ -3,6 +3,10 @@
 
 #include <string>
 
+static const ServerContext* findServer(Config& cfg, int port, const std::string& host_name) {
+    return cfg.getServer(ListenEndpoint("0.0.0.0", port), host_name);
+}
+
 // ---------------------------------------------------------------- loadFile --
 
 static void test_LoadValidSimpleServer() {
@@ -112,7 +116,7 @@ static void test_LoadTestConfUploadReachable() {
     cfg.loadFile("../configurations/test.conf");
     EXPECT_EQ(cfg.getServers().size(), (size_t)1);
 
-    const ServerContext* s = cfg.getServer(8080, "localhost");
+    const ServerContext* s = findServer(cfg, 8080, "localhost");
     EXPECT_TRUE(s != NULL);
     const LocationContext* upload = cfg.matchLocation(s, "/upload/file.txt");
     EXPECT_TRUE(upload != NULL);
@@ -199,7 +203,7 @@ static void test_GetServerByPort() {
     beginTest("GetServerByPort");
     Config cfg;
     cfg.loadFile("conf/multi_server.conf");
-    const ServerContext* s = cfg.getServer(8080, "");
+    const ServerContext* s = findServer(cfg, 8080, "");
     EXPECT_TRUE(s != NULL);
     EXPECT_EQ(s->getPort(), 8080);
     passTest();
@@ -209,7 +213,7 @@ static void test_GetServerNotFound() {
     beginTest("GetServerNotFound");
     Config cfg;
     cfg.loadFile("conf/multi_server.conf");
-    const ServerContext* s = cfg.getServer(9999, "");
+    const ServerContext* s = findServer(cfg, 9999, "");
     EXPECT_TRUE(s == NULL);
     passTest();
 }
@@ -218,7 +222,7 @@ static void test_GetServerByServerName() {
     beginTest("GetServerByServerName");
     Config cfg;
     cfg.loadFile("conf/named_servers.conf");
-    const ServerContext* s = cfg.getServer(8080, "site-b.com");
+    const ServerContext* s = findServer(cfg, 8080, "site-b.com");
     EXPECT_TRUE(s != NULL);
     EXPECT_TRUE(s->getIsServerNameIncluded("site-b.com"));
     passTest();
@@ -229,7 +233,7 @@ static void test_GetServerDefaultWhenNoNameMatch() {
     // When no server_name matches, return the first server on that port
     Config cfg;
     cfg.loadFile("conf/named_servers.conf");
-    const ServerContext* s = cfg.getServer(8080, "unknown.example.com");
+    const ServerContext* s = findServer(cfg, 8080, "unknown.example.com");
     EXPECT_TRUE(s != NULL);
     EXPECT_TRUE(s->getIsServerNameIncluded("site-a.com"));
     passTest();
@@ -239,11 +243,27 @@ static void test_GetServerMultipleNamesOnSamePort() {
     beginTest("GetServerMultipleNamesOnSamePort");
     Config cfg;
     cfg.loadFile("conf/named_servers.conf");
-    const ServerContext* sa = cfg.getServer(8080, "site-a.com");
-    const ServerContext* sb = cfg.getServer(8080, "site-b.com");
+    const ServerContext* sa = findServer(cfg, 8080, "site-a.com");
+    const ServerContext* sb = findServer(cfg, 8080, "site-b.com");
     EXPECT_TRUE(sa != NULL);
     EXPECT_TRUE(sb != NULL);
     EXPECT_TRUE(sa != sb);
+    passTest();
+}
+
+static void test_GetServerByLocalInterfaceAndPort() {
+    beginTest("GetServerByLocalInterfaceAndPort");
+    Config cfg;
+    cfg.loadFile("conf/same_port_interfaces.conf");
+
+    const ServerContext* sa = cfg.getServer(ListenEndpoint("127.0.0.1", 8124), "same-port-b.local");
+    const ServerContext* sb = cfg.getServer(ListenEndpoint("127.0.0.2", 8124), "same-port-b.local");
+
+    EXPECT_TRUE(sa != NULL);
+    EXPECT_TRUE(sb != NULL);
+    EXPECT_STREQ(sa->getHost(), "127.0.0.1");
+    EXPECT_STREQ(sb->getHost(), "127.0.0.2");
+    EXPECT_TRUE(sb->getIsServerNameIncluded("same-port-b.local"));
     passTest();
 }
 
@@ -253,7 +273,7 @@ static void test_MatchLocationExact() {
     beginTest("MatchLocationExact");
     Config cfg;
     cfg.loadFile("conf/locations.conf");
-    const ServerContext* s = cfg.getServer(8080, "");
+    const ServerContext* s = findServer(cfg, 8080, "");
     EXPECT_TRUE(s != NULL);
     const LocationContext* loc = cfg.matchLocation(s, "/api/users");
     EXPECT_TRUE(loc != NULL);
@@ -265,7 +285,7 @@ static void test_MatchLocationLongestPrefix() {
     beginTest("MatchLocationLongestPrefix");
     Config cfg;
     cfg.loadFile("conf/locations.conf");
-    const ServerContext* s = cfg.getServer(8080, "");
+    const ServerContext* s = findServer(cfg, 8080, "");
     const LocationContext* loc = cfg.matchLocation(s, "/api/v2/items");
     EXPECT_TRUE(loc != NULL);
     EXPECT_STREQ(loc->getPath(), "/api/v2");
@@ -276,7 +296,7 @@ static void test_MatchLocationRoot() {
     beginTest("MatchLocationRoot");
     Config cfg;
     cfg.loadFile("conf/locations.conf");
-    const ServerContext* s = cfg.getServer(8080, "");
+    const ServerContext* s = findServer(cfg, 8080, "");
     const LocationContext* loc = cfg.matchLocation(s, "/other/path");
     EXPECT_TRUE(loc != NULL);
     EXPECT_STREQ(loc->getPath(), "/");
@@ -288,7 +308,7 @@ static void test_MatchLocationNoBoundaryFalsePositive() {
     // /api should NOT match /apiary (boundary check)
     Config cfg;
     cfg.loadFile("conf/locations.conf");
-    const ServerContext* s = cfg.getServer(8080, "");
+    const ServerContext* s = findServer(cfg, 8080, "");
     const LocationContext* loc = cfg.matchLocation(s, "/apiary");
     EXPECT_TRUE(loc != NULL);
     EXPECT_STREQ(loc->getPath(), "/");
@@ -328,7 +348,7 @@ static void test_LocationInheritsServerRoot() {
     beginTest("LocationInheritsServerRoot");
     Config cfg;
     cfg.loadFile("conf/inherit.conf");
-    const ServerContext* s = cfg.getServer(8080, "");
+    const ServerContext* s = findServer(cfg, 8080, "");
     EXPECT_TRUE(s != NULL);
     const LocationContext* loc = cfg.matchLocation(s, "/");
     EXPECT_TRUE(loc != NULL);
@@ -340,7 +360,7 @@ static void test_LocationOverridesServerRoot() {
     beginTest("LocationOverridesServerRoot");
     Config cfg;
     cfg.loadFile("conf/inherit.conf");
-    const ServerContext* s = cfg.getServer(8080, "");
+    const ServerContext* s = findServer(cfg, 8080, "");
     const LocationContext* loc = cfg.matchLocation(s, "/static");
     EXPECT_TRUE(loc != NULL);
     EXPECT_STREQ(loc->getRoot(), "/var/www/static");
@@ -351,7 +371,7 @@ static void test_AllowMethodsRestrictLocation() {
     beginTest("AllowMethodsRestrictLocation");
     Config cfg;
     cfg.loadFile("conf/directives.conf");
-    const ServerContext* s = cfg.getServer(8080, "");
+    const ServerContext* s = findServer(cfg, 8080, "");
     EXPECT_TRUE(s != NULL);
 
     const LocationContext* root = cfg.matchLocation(s, "/");
@@ -372,7 +392,7 @@ static void test_DefaultMethodsAllowAllWhenDirectiveMissing() {
     beginTest("DefaultMethodsAllowAllWhenDirectiveMissing");
     Config cfg;
     cfg.loadFile("conf/directives.conf");
-    const ServerContext* s = cfg.getServer(8080, "");
+    const ServerContext* s = findServer(cfg, 8080, "");
     EXPECT_TRUE(s != NULL);
     const LocationContext* loc = cfg.matchLocation(s, "/default/page.html");
     EXPECT_TRUE(loc != NULL);
@@ -386,7 +406,7 @@ static void test_LocationDirectivesParsed() {
     beginTest("LocationDirectivesParsed");
     Config cfg;
     cfg.loadFile("conf/directives.conf");
-    const ServerContext* s = cfg.getServer(8080, "");
+    const ServerContext* s = findServer(cfg, 8080, "");
     EXPECT_TRUE(s != NULL);
 
     const LocationContext* upload = cfg.matchLocation(s, "/upload/file.txt");
@@ -422,7 +442,7 @@ static void test_LocationInheritsServerSettings() {
     beginTest("LocationInheritsServerSettings");
     Config cfg;
     cfg.loadFile("conf/directives.conf");
-    const ServerContext* s = cfg.getServer(8080, "");
+    const ServerContext* s = findServer(cfg, 8080, "");
     EXPECT_TRUE(s != NULL);
     const LocationContext* loc = cfg.matchLocation(s, "/default/page.html");
     EXPECT_TRUE(loc != NULL);
@@ -469,6 +489,7 @@ int main() {
     RUN_TEST(test_GetServerByServerName);
     RUN_TEST(test_GetServerDefaultWhenNoNameMatch);
     RUN_TEST(test_GetServerMultipleNamesOnSamePort);
+    RUN_TEST(test_GetServerByLocalInterfaceAndPort);
 
     std::cout << "\n[ matchLocation tests ]" << std::endl;
     RUN_TEST(test_MatchLocationExact);

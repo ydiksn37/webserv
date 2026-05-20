@@ -27,7 +27,7 @@ class Client {
 		std::vector<int> HandleCgiTimeout();
 		void CleanupClient(int client_fd);
 
-		void SetLocalPort(int fd, int port);
+		void SetLocalEndpoint(int fd, const ListenEndpoint& endpoint);
 		bool ShouldClose(int fd);
 
 	private:
@@ -44,7 +44,7 @@ class Client {
 			std::string	cgi_input;
 			std::string	cgi_output;
 			std::time_t	cgi_start_time;
-			int			local_port;
+			ListenEndpoint	local_endpoint;
 			bool		should_close;
 			ClientData();
 		};

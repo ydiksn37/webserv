@@ -79,19 +79,19 @@ namespace {
 		return (host.substr(0, colon));
 	}
 
-	const ServerContext	*selectServer(const Config &config, const HttpRequest &request, int local_port) {
+	const ServerContext	*selectServer(const Config &config, const HttpRequest &request, const ListenEndpoint &endpoint) {
 		std::string host = extractHostName(request);
-		return (config.getServer(local_port, host));
+		return (config.getServer(endpoint, host));
 	}
 
 	const LocationContext	*selectLocation(const Config &config, const ServerContext *server, const HttpRequest &request) {
 		return (config.matchLocation(server, request.getPath()));
 	}
 
-	bool	resolveRoute(const Config &config, HttpRequest &request, RouteContext &route, HttpResponse &response, int local_port) {
-		route.server = selectServer(config, request, local_port);
+	bool	resolveRoute(const Config &config, HttpRequest &request, RouteContext &route, HttpResponse &response, const ListenEndpoint &endpoint) {
+		route.server = selectServer(config, request, endpoint);
 		if (route.server == NULL) {
-			std::cerr << "[Debug] No server found for port " << local_port << " and host " << extractHostName(request) << std::endl;
+			std::cerr << "[Debug] No server found for " << endpoint.host << ":" << endpoint.port << " and host " << extractHostName(request) << std::endl;
 			applyErrorPage(response, 404, NULL, NULL);
 			return (false);
 		}
@@ -311,7 +311,7 @@ EngineResult	dispatchMethod(const HttpRequest &request, const ServerContext &ser
 	return (result);
 }
 
-EngineResult	engine(const Config &config, HttpRequest &request, int local_port) {
+EngineResult	engine(const Config &config, HttpRequest &request, const ListenEndpoint& endpoint) {
 	RouteContext	route;
 	EngineResult	result;
 
@@ -323,7 +323,7 @@ EngineResult	engine(const Config &config, HttpRequest &request, int local_port) 
 	}
 
 	if (request.isHeaderFinished()) {
-		if (!resolveRoute(config, request, route, result.response, local_port))
+		if (!resolveRoute(config, request, route, result.response, endpoint))
 			return (result);
 		if (!prepareResponse(request, route, result.response))
 			return (result);

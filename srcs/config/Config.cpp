@@ -2,6 +2,10 @@
 #include <fstream>
 #include <sstream>
 
+ListenEndpoint::ListenEndpoint() : host(""), port(0) {}
+
+ListenEndpoint::ListenEndpoint(const std::string& host, int port) : host(host), port(port) {}
+
 Config::Config() : _servers() {}
 
 Config::~Config() {}
@@ -215,11 +219,11 @@ void Config::loadFile(const std::string& filename) {
 	validateConfiguration();
 }
 
-const ServerContext* Config::getServer(int port, const std::string& host_name) const {
+const ServerContext* Config::getServer(const ListenEndpoint& endpoint, const std::string& host_name) const {
 	const ServerContext* default_server = NULL;
 
 	for (std::size_t i = 0; i < this->_servers.size(); ++i) {
-		if (this->_servers[i].getPort() == port) {
+		if (this->_servers[i].getPort() == endpoint.port && this->_servers[i].getHost() == endpoint.host) {
 			if (default_server == NULL) {
 				default_server = &this->_servers[i];
 			}
