@@ -39,10 +39,10 @@ Client::PipeInfo::PipeInfo(int f, uint32_t e) : fd(f), events(e) {}
 Client::ClientData::ClientData()
     : current_epoll_events(EPOLLIN), is_waiting_cgi(false), 
       cgi_read_fd(-1), cgi_write_fd(-1), cgi_pid(-1),
-      cgi_start_time(0), local_port(0), should_close(false) {}
+      cgi_start_time(0), local_endpoint(), should_close(false) {}
 
-void Client::SetLocalPort(int fd, int port) {
-	client_[fd].local_port = port;
+void Client::SetLocalEndpoint(int fd, const ListenEndpoint& endpoint) {
+	client_[fd].local_endpoint = endpoint;
 }
 
 bool Client::ShouldClose(int fd) {
@@ -64,12 +64,12 @@ int Client::Read(int fd, std::vector<PipeInfo>& new_pipes) {
 		&& !client_[fd].request.isRoutingResolved()
 		&& !client_[fd].request.isCompleted()
 		&& !client_[fd].request.isError()) {
-		engine(config_, client_[fd].request, client_[fd].local_port);
+		engine(config_, client_[fd].request, client_[fd].local_endpoint);
 	}
 
 	while((client_[fd].request.isCompleted() || client_[fd].request.isError()) && !client_[fd].is_waiting_cgi) {
-		std::cerr << "[Debug] Processing request: " << client_[fd].request.getMethod() << " " << client_[fd].request.getPath() << " on port " << client_[fd].local_port << std::endl;
-		EngineResult res = engine(config_, client_[fd].request, client_[fd].local_port);
+		std::cerr << "[Debug] Processing request: " << client_[fd].request.getMethod() << " " << client_[fd].request.getPath() << " on " << client_[fd].local_endpoint.host << ":" << client_[fd].local_endpoint.port << std::endl;
+		EngineResult res = engine(config_, client_[fd].request, client_[fd].local_endpoint);
 
 		std::string conn = client_[fd].request.getHeader("connection");
 		for (std::size_t i = 0; i < conn.length(); ++i) conn[i] = std::tolower(conn[i]);

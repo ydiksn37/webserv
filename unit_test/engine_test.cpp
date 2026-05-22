@@ -15,7 +15,7 @@ static Config loadEngineConfig() {
 static EngineResult runEngine(Config& cfg, const std::string& raw_request) {
     HttpRequest req;
     req.parse(raw_request);
-    return engine(cfg, req, 8181);
+    return engine(cfg, req, ListenEndpoint("0.0.0.0", 8181));
 }
 
 static std::string readFile(const std::string& path) {

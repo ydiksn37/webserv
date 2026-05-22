@@ -16,6 +16,6 @@ struct EngineResult {
 	EngineResult();
 };
 
-EngineResult	engine(const Config &config, HttpRequest &request, int local_port);
+EngineResult	engine(const Config &config, HttpRequest &request, const ListenEndpoint& endpoint);
 
 #endif

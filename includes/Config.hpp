@@ -9,6 +9,13 @@
 # include <cctype>
 # include <cerrno>
 
+struct ListenEndpoint {
+	std::string	host;
+	int					port;
+	ListenEndpoint();
+	ListenEndpoint(const std::string& host, int port);
+};
+
 class Config {
 	public:
 		Config();
@@ -20,7 +27,7 @@ class Config {
 
 		std::vector<std::string>	tokenize(const std::string& content);
 		void											loadFile(const std::string& filename);
-		const ServerContext*			getServer(int port, const std::string& host_name) const;
+		const ServerContext*			getServer(const ListenEndpoint& endpoint, const std::string& host_name) const;
 		const LocationContext*		matchLocation(const ServerContext* server, const std::string& uri) const;
 
 		class ConfigException : public std::runtime_error {

@@ -20,9 +20,10 @@ void EventLoop(const Config& config) {
 		for(unsigned i = 0; i < events.size(); i++) {
 			int fd = events[i].data.fd;
 			if(ep.IsListen(fd)) {
-				int client_fd, port;
-				ep.Accept(fd, client_fd, port);
-				client.SetLocalPort(client_fd, port);
+				int client_fd;
+				ListenEndpoint endpoint;
+				ep.Accept(fd, client_fd, endpoint);
+				client.SetLocalEndpoint(client_fd, endpoint);
 			}
 			else {
 				int client_fd = client.GetClientFdFromPipe(fd);
