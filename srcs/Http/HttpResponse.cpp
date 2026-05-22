@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <fstream>
+#include <cerrno>
 
 namespace {
 	std::string	htmlEscape(const std::string &value) {
@@ -92,7 +93,7 @@ std::map<int, std::string>		HttpResponse::_initStatusMessages() {
 	m[422] = "Unprocessable Entity";
 	m[425] = "Too Early";
 	m[426] = "Upgrade Required";
-	m[429] = "Too many Requests";
+	m[429] = "Too Many Requests";
 	m[431] = "Request Header Fields Too Large";
 	m[500] = "Internal Server Error";
 	m[501] = "Not Implemented";
@@ -141,7 +142,10 @@ void	HttpResponse::setBodyFromFile(const std::string& filepath) {
 	std::stringstream	buffer;
 
 	if (stat(filepath.c_str(), &fileStat) != 0) {
-		this->setStatusCode(404);
+		if (errno == EACCES)
+			this->setStatusCode(403);
+		else
+			this->setStatusCode(404);
 		return ;
 	}
 	if (S_ISDIR(fileStat.st_mode)) {

@@ -1,0 +1,12 @@
+services:
+  webserv:
+    platform: linux/amd64
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+      - "8082:8082"
+    stdin_open: true
+    tty: true

@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <fstream>
+#include <cerrno>
 
 struct RouteContext {
 	const ServerContext		*server;
@@ -20,6 +21,17 @@ namespace {
 	bool fileExists(const std::string& path) {
 		struct stat buffer;
 		return (stat(path.c_str(), &buffer) == 0);
+	}
+
+	bool fileExistsOrForbidden(const std::string& path, bool &forbidden) {
+		struct stat buffer;
+
+		forbidden = false;
+		if (stat(path.c_str(), &buffer) == 0)
+			return true;
+		if (errno == EACCES)
+			forbidden = true;
+		return false;
 	}
 
 	bool isDirectory(const std::string& path) {
@@ -154,9 +166,10 @@ namespace {
 	HttpResponse	handleGet(const HttpRequest &request, const ServerContext &server, const LocationContext &location) {
 		HttpResponse response;
 		std::string full_path = translatePath(request, location, server);
+		bool forbidden;
 
-		if (!fileExists(full_path)) {
-			applyErrorPage(response, 404, &location, &server);
+		if (!fileExistsOrForbidden(full_path, forbidden)) {
+			applyErrorPage(response, forbidden ? 403 : 404, &location, &server);
 			return response;
 		}
 
@@ -260,9 +273,10 @@ namespace {
 	HttpResponse	handleDelete(const HttpRequest &request, const ServerContext &server, const LocationContext &location) {
 		std::string full_path = translatePath(request, location, server);
 		HttpResponse response;
+		bool forbidden;
 
-		if (!fileExists(full_path)) {
-			applyErrorPage(response, 404, &location, &server);
+		if (!fileExistsOrForbidden(full_path, forbidden)) {
+			applyErrorPage(response, forbidden ? 403 : 404, &location, &server);
 			return response;
 		}
 		if (isDirectory(full_path)) {
@@ -286,8 +300,9 @@ EngineResult	dispatchMethod(const HttpRequest &request, const ServerContext &ser
 
 	if (isCgi(request, location, bin_path)) {
 		std::string script_path = resolveScriptPath(request, location, server);
-		if (!fileExists(script_path)) {
-			applyErrorPage(result.response, 404, &location, &server);
+		bool forbidden;
+		if (!fileExistsOrForbidden(script_path, forbidden)) {
+			applyErrorPage(result.response, forbidden ? 403 : 404, &location, &server);
 			return result;
 		}
 		if (!isRegularFile(script_path) || access(script_path.c_str(), R_OK) != 0) {
