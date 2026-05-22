@@ -6,6 +6,75 @@
 #include <fstream>
 
 namespace {
+	void	addInformationalStatuses(std::map<int, std::string> &m) {
+		m[100] = "Continue";
+		m[101] = "Switching Protocols";
+		m[102] = "Processing";
+		m[103] = "Early Hints";
+	}
+
+	void	addSuccessStatuses(std::map<int, std::string> &m) {
+		m[200] = "OK";
+		m[201] = "Created";
+		m[202] = "Accepted";
+		m[203] = "Non-Authoritative Information";
+		m[204] = "No Content";
+		m[205] = "Reset Content";
+		m[206] = "Partial Content";
+	}
+
+	void	addRedirectionStatuses(std::map<int, std::string> &m) {
+		m[300] = "Multiple Choices";
+		m[301] = "Moved Permanently";
+		m[302] = "Found";
+		m[303] = "See Other";
+		m[304] = "Not Modified";
+		m[305] = "Use Proxy";
+		m[307] = "Temporary Redirect";
+		m[308] = "Permanent Redirect";
+	}
+
+	void	addClientErrorStatuses(std::map<int, std::string> &m) {
+		m[400] = "Bad Request";
+		m[401] = "Unauthorized";
+		m[402] = "Payment Required";
+		m[403] = "Forbidden";
+		m[404] = "Not Found";
+		m[405] = "Method Not Allowed";
+		m[406] = "Not Acceptable";
+		m[407] = "Proxy Authentication Required";
+		m[408] = "Request Timeout";
+		m[409] = "Conflict";
+		m[410] = "Gone";
+		m[411] = "Length Required";
+		m[412] = "Precondition Failed";
+		m[413] = "Payload Too Large";
+		m[414] = "URI Too Long";
+		m[415] = "Unsupported Media Type";
+		m[416] = "Range Not Satisfiable";
+		m[417] = "Expectation Failed";
+		m[421] = "Misdirected Request";
+		m[422] = "Unprocessable Entity";
+		m[425] = "Too Early";
+		m[426] = "Upgrade Required";
+		m[429] = "Too Many Requests";
+		m[431] = "Request Header Fields Too Large";
+	}
+
+	void	addServerErrorStatuses(std::map<int, std::string> &m) {
+		m[500] = "Internal Server Error";
+		m[501] = "Not Implemented";
+		m[502] = "Bad Gateway";
+		m[503] = "Service Unavailable";
+		m[504] = "Gateway Timeout";
+		m[505] = "HTTP Version Not Supported";
+		m[506] = "Variant Also Negotiates";
+		m[507] = "Insufficient Storage";
+		m[508] = "Loop Detected";
+		m[510] = "Not Extended";
+		m[511] = "Network Authentication Required";
+	}
+
 	std::string	htmlEscape(const std::string &value) {
 		std::string	escaped;
 
@@ -22,6 +91,31 @@ namespace {
 				escaped += value[i];
 		}
 		return (escaped);
+	}
+
+	std::string	normalizeBaseUri(const std::string &uri) {
+		if (uri.empty())
+			return ("/");
+		return (uri);
+	}
+
+	void	writeDirectoryListingHeader(std::stringstream &ss,
+			const std::string &baseUri) {
+		ss << "<html>\r\n<head><title>Index of " << htmlEscape(baseUri)
+			<< "</title></head>\r\n";
+		ss << "<body>\r\n<h1>Index of " << htmlEscape(baseUri)
+			<< "</h1><hr><pre>\r\n";
+	}
+
+	void	writeDirectoryEntry(std::stringstream &ss,
+			const std::string &baseUri, const std::string &name) {
+		std::string	displayName;
+
+		displayName = htmlEscape(name);
+		ss << "<a href=\"" << htmlEscape(baseUri);
+		if (baseUri[baseUri.length() - 1] != '/')
+			ss << "/";
+		ss << displayName << "\">" << displayName << "</a>\r\n";
 	}
 }
 
@@ -51,60 +145,11 @@ HttpResponse::~HttpResponse() {}
 std::map<int, std::string>		HttpResponse::_initStatusMessages() {
 	std::map<int, std::string>	m;
 
-	m[100] = "Continue";
-	m[101] = "Switching Protocols";
-	m[102] = "Processing";
-	m[103] = "Early Hints";
-	m[200] = "OK";
-	m[201] = "Created";
-	m[202] = "Accepted";
-	m[203] = "Non-Authoritative Information";
-	m[204] = "No Content";
-	m[205] = "Reset Content";
-	m[206] = "Partial Content";
-	m[300] = "Multiple Choices";
-	m[301] = "Moved Permanently";
-	m[302] = "Found";
-	m[303] = "See Other";
-	m[304] = "Not Modified";
-	m[305] = "Use Proxy";
-	m[307] = "Temporary Redirect";
-	m[308] = "Permanent Redirect";
-	m[400] = "Bad Request";
-	m[401] = "Unauthorized";
-	m[402] = "Payment Required";
-	m[403] = "Forbidden";
-	m[404] = "Not Found";
-	m[405] = "Method Not Allowed";
-	m[406] = "Not Acceptable";
-	m[407] = "Proxy Authentication Required";
-	m[408] = "Request Timeout";
-	m[409] = "Conflict";
-	m[410] = "Gone";
-	m[411] = "Length Required";
-	m[412] = "Precondition Failed";
-	m[413] = "Payload Too Large";
-	m[414] = "URI Too Long";
-	m[415] = "Unsupported Media Type";
-	m[416] = "Range Not Satisfiable";
-	m[417] = "Expectation Failed";
-	m[421] = "Misdirected Request";
-	m[422] = "Unprocessable Entity";
-	m[425] = "Too Early";
-	m[426] = "Upgrade Required";
-	m[429] = "Too many Requests";
-	m[431] = "Request Header Fields Too Large";
-	m[500] = "Internal Server Error";
-	m[501] = "Not Implemented";
-	m[502] = "Bad Gateway";
-	m[503] = "Service Unavailable";
-	m[504] = "Gateway Timeout";
-	m[505] = "HTTP Version Not Supported";
-	m[506] = "Variant Also Negotiates";
-	m[507] = "Insufficient Storage";
-	m[508] = "Loop Detected";
-	m[510] = "Not Extended";
-	m[511] = "Network Authentication Required";
+	addInformationalStatuses(m);
+	addSuccessStatuses(m);
+	addRedirectionStatuses(m);
+	addClientErrorStatuses(m);
+	addServerErrorStatuses(m);
 	return (m);
 }
 
@@ -254,26 +299,15 @@ std::string	HttpResponse::generateDirectoryListing(const std::string& path, cons
 	dir = opendir(path.c_str());
 	if (dir == NULL)
 		return ("");
-	baseUri = uri;
-	if (baseUri.empty())
-		baseUri = "/";
-
-	ss << "<html>\r\n<head><title>Index of " << htmlEscape(baseUri)
-		<< "</title></head>\r\n";
-	ss << "<body>\r\n<h1>Index of " << htmlEscape(baseUri)
-		<< "</h1><hr><pre>\r\n";
+	baseUri = normalizeBaseUri(uri);
+	writeDirectoryListingHeader(ss, baseUri);
 
 	while ((entry = readdir(dir)) != NULL) {
 		std::string	name = entry->d_name;
-		std::string	displayName;
 
 		if (name == ".")
 			continue;
-		displayName = htmlEscape(name);
-		ss << "<a href=\"" << htmlEscape(baseUri);
-		if (baseUri[baseUri.length() - 1] != '/')
-			ss << "/";
-		ss << displayName << "\">" << displayName << "</a>\r\n";
+		writeDirectoryEntry(ss, baseUri, name);
 	}
 	closedir(dir);
 
