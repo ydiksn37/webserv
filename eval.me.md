@@ -101,7 +101,7 @@ curl -v -X DELETE http://localhost:8080/upload/basic.txt
 
 ### 未知のメソッド (UNKNOWN)
 ```bash
-curl -v -X UNKNOWN_METHOD http://localhost:8080/
+curl -v -X UNKNOWN http://localhost:8080/
 ```
 *   **期待結果**: サーバーがクラッシュせず、`501 Not Implemented` または `405 Method Not Allowed` が返ること。
 
@@ -112,17 +112,17 @@ curl -v -X UNKNOWN_METHOD http://localhost:8080/
 ### GET と POST のテスト
 ```bash
 # GET (Query String)
-curl -v "http://localhost:8080/cgi-bin/hello.py?name=test"
+curl -v "http://localhost:8082/cgi-bin/hello.py?name=test"
 
 # POST (Body)
-curl -v -X POST -d "name=test" http://localhost:8080/cgi-bin/hello.py
+curl -v -X POST -d "name=test" http://localhost:8082/cgi-bin/hello.py
 ```
 *   **期待結果**: Pythonスクリプトが実行され、適切なHTMLが返ってくること。
 
 ### 無限ループ/エラーのCGI
 `test/www/cgi-bin/timeout.py` を使用。
 ```bash
-curl -v http://localhost:8080/cgi-bin/timeout.py
+curl -v http://localhost:8082/cgi-bin/timeout.py
 ```
 *   **期待結果**: サーバーがクラッシュせず、タイムアウト後に **`504 Gateway Timeout`** が返ること。
 
@@ -138,7 +138,7 @@ curl -v http://localhost:8080/cgi-bin/timeout.py
 ### ディレクトリリスティング (Autoindex)
 ```bash
 # configurations/example.conf では / に autoindex on; が設定されている
-curl -i -H "Host: www.example.com" http://localhost:8080/
+curl -v http://localhost:8080/files
 ```
 *   **期待結果**: ファイル一覧のHTMLが返ってくること。
 
