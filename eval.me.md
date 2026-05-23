@@ -128,7 +128,49 @@ curl -v http://localhost:8080/cgi-bin/timeout.py
 
 ---
 
-## 6. Siege によるストレステスト
+## 7. ブラウザでの確認 (Check with a browser)
+
+### ヘッダーと静的サイトの確認
+1. ブラウザで `http://localhost:8080/` を開く。
+2. 開発者ツールの「ネットワーク」タブを確認。
+*   **確認事項**: リクエスト/レスポンスヘッダーが正しく表示され、CSSや画像（もしあれば）を含めサイトが正しく表示されること。
+
+### ディレクトリリスティング (Autoindex)
+```bash
+# configurations/example.conf では / に autoindex on; が設定されている
+curl -i -H "Host: www.example.com" http://localhost:8080/
+```
+*   **期待結果**: ファイル一覧のHTMLが返ってくること。
+
+### リダイレクト
+```bash
+curl -v -H "Host: www.example.com" http://localhost:8080/old-page
+```
+*   **期待結果**: `301 Moved Permanently` が返り、`Location: /new-page.html` が含まれていること。
+
+---
+
+## 8. ポートの問題 (Port issues)
+
+### 同一ポートでの複数ウェブサイト (Virtual Host)
+```bash
+# Hostヘッダーを変えて同じポート(8080)にアクセス
+curl -i -H "Host: localhost" http://localhost:8080/
+curl -i -H "Host: example.com" http://localhost:8080/
+curl -i -H "Host: www.example.com" http://localhost:8080/
+```
+*   **期待結果**: 各 Host ごとに設定された異なる `root` の内容が返ってくること。
+
+### 同一ポートへの複数プログラムのバインド
+1. `webserv` を起動した状態で、別のターミナルから同じ設定で `webserv` を起動しようとする。
+```bash
+docker-compose exec webserv ./webserv configurations/example.conf
+```
+*   **期待結果**: `bind` エラーが発生し、2つ目のプログラムが正常に起動しないこと（または一貫したエラー処理が行われること）。
+
+---
+
+## 9. Siege によるストレステスト
 
 ```bash
 # 10クライアント、10秒間のテスト
