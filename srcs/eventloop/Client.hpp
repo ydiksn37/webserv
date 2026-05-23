@@ -18,7 +18,7 @@ class Client {
 		};
 
 		int Read(int fd, std::vector<PipeInfo>& new_pipes);
-		void Write(int fd);
+		int Write(int fd);
 		bool WriteBegin(int fd);
 		bool WriteEnd(int fd);
 		int  ReadCgi(int pipe_fd, bool closed_event);
