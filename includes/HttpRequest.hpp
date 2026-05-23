@@ -65,6 +65,22 @@ class HttpRequest {
 		std::size_t													_maxBodySize;
 
 		void	_setError(int errorCode);
+		bool	_parseLineState();
+		bool	_parseFixedBody();
+		bool	_readChunkSize();
+		bool	_appendChunkData();
+		bool	_parseChunkedBody();
+		bool	_parseTrailer();
+		void	_finishHeaders();
+		bool	_validateRequestLineLayout(const std::string &line,
+					std::size_t &firstSpace, std::size_t &secondSpace);
+		bool	_validateRequestTarget();
+		void	_splitUri();
+		bool	_validateHeaderName(const std::string &key);
+		bool	_parseContentLengthHeader(const std::string &key,
+					const std::string &value);
+		bool	_validateHostHeader(const std::string &key,
+					const std::string &value);
 		void	_parseRequestLine(std::string &line);
 		void	_parseHeader(std::string &line);
 		void	_normalizePath();
