@@ -58,7 +58,8 @@ void EventLoop(const Config& config) {
 						}
 					}
 					if(events[i].events & EPOLLOUT) {
-						client.Write(fd);
+						if(client.Write(fd) < 0)
+							ep.Del(fd);
 						if(client.WriteEnd(fd)) {
 							if (client.ShouldClose(fd))
 								ep.Del(fd);

@@ -118,11 +118,18 @@ int Client::Read(int fd, std::vector<PipeInfo>& new_pipes) {
 	return 0;
 }
 
-void Client::Write(int fd) {
-	if (!client_.count(fd)) return;
+int Client::Write(int fd) {
+	if (!client_.count(fd)) return -1;
 	int write_size = write(fd, client_[fd].write_buffer.c_str(), client_[fd].write_buffer.size());
 	if (write_size > 0)
+	{
 		client_[fd].write_buffer.erase(0,write_size);
+		return write_size;
+	}
+	else {
+		CleanupClient(fd);
+		return -1;
+	}
 }
 
 bool Client::WriteBegin(int fd) {
