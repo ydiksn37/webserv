@@ -198,7 +198,7 @@ namespace {
 				}
 			}
 
-			applyErrorPage(response, 403, &location, &server);
+			applyErrorPage(response, 404, &location, &server);
 			return response;
 		}
 
@@ -280,7 +280,7 @@ namespace {
 			return response;
 		}
 		if (isDirectory(full_path)) {
-			applyErrorPage(response, 403, &location, &server);
+			applyErrorPage(response, 404, &location, &server);
 			return response;
 		}
 		if (std::remove(full_path.c_str()) == 0)
