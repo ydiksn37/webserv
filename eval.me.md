@@ -177,3 +177,17 @@ docker-compose exec webserv ./webserv configurations/example.conf
 siege -c 10 -t 10S http://localhost:8080/
 ```
 *   **期待結果**: Availability が 99.5% 以上であること。
+
+## 10. chunkedテスト
+```bash
+POST /upload/chunk.txt HTTP/1.1
+host: 127.0.0.1:8080
+Content-Type: text/plain
+Transfer-Encoding: chunked
+
+5
+Hello
+6
+World!
+0
+```
