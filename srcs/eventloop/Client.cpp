@@ -156,10 +156,10 @@ int Client::ReadCgi(int pipe_fd, bool closed_event) {
 			client_[client_fd].cgi_output.append(buffer, read_size);
 		}
 	}
-	if (read_size == 0) {
+	if (read_size == 0 || closed_event) {
 		reached_eof = true;
 	}
-	if (!reached_eof && !closed_event)
+	if (!reached_eof)
 		return 0;
 
 	std::string status_line = "200 OK";
@@ -217,6 +217,10 @@ int Client::WriteCgi(int pipe_fd) {
 	int write_size = write(pipe_fd, client_[client_fd].cgi_input.c_str(), client_[client_fd].cgi_input.size());
 	if (write_size > 0) {
 		client_[client_fd].cgi_input.erase(0, write_size);
+	} else {
+		pipe_to_client_.erase(pipe_fd);
+		client_[client_fd].cgi_write_fd = -1;
+		return 1;
 	}
 	if (client_[client_fd].cgi_input.empty()) {
 		pipe_to_client_.erase(pipe_fd);
