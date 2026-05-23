@@ -18,8 +18,7 @@ COMMON_SRCS = $(ROOTDIR)/srcs/Http/HttpRequest.cpp \
               $(ROOTDIR)/srcs/config/Config.cpp \
               $(ROOTDIR)/srcs/config/utils.cpp \
               $(ROOTDIR)/srcs/config/ServerContext.cpp \
-              $(ROOTDIR)/srcs/config/LocationContext.cpp \
-              $(ROOTDIR)/srcs/config/utils.cpp
+              $(ROOTDIR)/srcs/config/LocationContext.cpp
 
 HTTP_SRCS   = http_request_test.cpp $(COMMON_SRCS)
 CONFIG_SRCS = config_test.cpp $(COMMON_SRCS)
