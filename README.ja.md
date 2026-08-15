@@ -1,6 +1,6 @@
 *このプロジェクトは、42のカリキュラムの一環としてyukusano、sonakamu、ssawaによって作成されました。*
 
-# Webserv
+# webserv
 
 [English Version](README.md)
 
