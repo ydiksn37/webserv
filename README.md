@@ -2,6 +2,8 @@
 
 # Webserv
 
+[日本語版はこちら](README.ja.md)
+
 ## Description
 
 Webserv is a small HTTP/1.1 server written in C++98. It implements a subset of
