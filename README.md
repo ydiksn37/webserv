@@ -6,6 +6,7 @@
 
 ## Description
 
+Reimplementation of the Web Server.
 Webserv is a small HTTP/1.1 server written in C++98. It implements a subset of
 the behavior expected from a production web server while keeping the codebase
 focused on the core concepts of network programming, request parsing, routing,
