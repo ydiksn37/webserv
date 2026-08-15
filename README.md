@@ -1,6 +1,6 @@
 *This project has been created as part of the 42 curriculum by yukusano, sonakamu, ssawa.*
 
-# Webserv
+# webserv
 
 [日本語版はこちら](README.ja.md)
 
