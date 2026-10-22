@@ -1,3 +1,0 @@
-GET /
-Host: localhost:49200
-

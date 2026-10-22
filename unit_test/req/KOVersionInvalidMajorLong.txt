@@ -1,3 +1,0 @@
-GET / HTTP/1234567890
-Host: localhost:49200
-

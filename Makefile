@@ -69,9 +69,6 @@ run: all
 	@$(MAKE) $(MAKE_FLAGS) clean -s
 	@./$(NAME) default.conf
 
-test:
-	@$(MAKE) $(MAKE_FLAGS) -C unit_test run
-
 docker:
 	@echo "$(CYAN)🐳 Setting up Docker environment...$(RESET)"
 	docker-compose up -d --build
@@ -88,10 +85,9 @@ help:
 	@echo "  $(GREEN)fclean$(RESET)   : Remove object files and the executable"
 	@echo "  $(GREEN)re$(RESET)       : Rebuild the project from scratch"
 	@echo "  $(GREEN)run$(RESET)      : Build and run the webserv with default.conf"
-	@echo "  $(GREEN)test$(RESET)     : Run unit tests"
 	@echo "  $(GREEN)docker$(RESET)   : Start Docker environment and print command to enter it"
 	@echo "  $(GREEN)help$(RESET)     : Show this help message"
 
 -include $(DEPS)
 
-.PHONY: all clean fclean re run test format docker help
+.PHONY: all clean fclean re run docker help
