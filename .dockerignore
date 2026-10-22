@@ -1,0 +1,8 @@
+.git
+.cache
+.vscode
+webserv
+**/*.o
+**/*.d
+compile_commands.json
+compile_flags.txt

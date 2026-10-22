@@ -1,20 +1,10 @@
-FROM ubuntu:22.04
+FROM debian:12-slim
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    clang \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    g++ \
     make \
     python3 \
     php-cgi \
-    curl \
-    netcat-openbsd \
-    siege \
-    git \
-    valgrind \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
-CMD ["bash"]

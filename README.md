@@ -36,11 +36,40 @@ The implementation is organized into separate modules:
 
 ## Instructions
 
+### Boot
+
+#### Linux
+
 Build the server from the repository root:
 
 ```sh
 make
 ```
+
+#### macOS
+
+Use a Linux development container because the server depends on
+`epoll`. Open its shell with:
+
+```sh
+make docker
+```
+
+The image is built automatically the first time. Build the server inside the
+container:
+
+```sh
+make re
+```
+
+The container is removed automatically when you exit the shell. After changing
+the Dockerfile, rebuild the image with:
+
+```sh
+make docker-build
+```
+
+### Execution
 
 Run with an explicit configuration file:
 
