@@ -12,44 +12,44 @@ class Client {
 	public:
 		Client(const Config& config);
 		struct PipeInfo {
-			int fd;
-			uint32_t events;
+			int 			fd;
+			uint32_t 	events;
 			PipeInfo(int f, uint32_t e);
 		};
 
-		int Read(int fd, std::vector<PipeInfo>& new_pipes);
-		int Write(int fd);
-		bool WriteBegin(int fd);
-		bool WriteEnd(int fd);
-		int  ReadCgi(int pipe_fd, bool closed_event);
-		int  WriteCgi(int pipe_fd);
-		int  GetClientFdFromPipe(int pipe_fd);
-		std::vector<int> HandleCgiTimeout();
-		void CleanupClient(int client_fd);
-
-		void SetLocalEndpoint(int fd, const ListenEndpoint& endpoint);
-		bool ShouldClose(int fd);
+		int 							Read(int fd, std::vector<PipeInfo>& new_pipes);
+		int 							Write(int fd);
+		bool 							WriteBegin(int fd);
+		bool 							WriteEnd(int fd);
+		int  							ReadCgi(int pipe_fd, bool closed_event);
+		int  							WriteCgi(int pipe_fd);
+		int  							GetClientFdFromPipe(int pipe_fd);
+		std::vector<int> 	HandleCgiTimeout();
+		void 							CleanupClient(int client_fd);
+		void 							SetLocalEndpoint(int fd, const ListenEndpoint& endpoint);
+		bool 							ShouldClose(int fd);
 
 	private:
-		static const unsigned buffer_size = 8096;
-		Config config_;
+		static const unsigned 		buffer_size = 8096;
+		Config 										config_;
+		std::map<int,ClientData> 	client_;
+		std::map<int, int> 				pipe_to_client_;
+
 		struct ClientData {
-			HttpRequest request;
-			std::string write_buffer;
-			unsigned current_epoll_events;
-			bool		is_waiting_cgi;
-			int			cgi_read_fd;
-			int			cgi_write_fd;
-			pid_t		cgi_pid;
-			std::string	cgi_input;
-			std::string	cgi_output;
-			std::time_t	cgi_start_time;
+			HttpRequest 		request;
+			std::string 		write_buffer;
+			unsigned 				current_epoll_events;
+			bool						is_waiting_cgi;
+			int							cgi_read_fd;
+			int							cgi_write_fd;
+			pid_t						cgi_pid;
+			std::string			cgi_input;
+			std::string			cgi_output;
+			std::time_t			cgi_start_time;
 			ListenEndpoint	local_endpoint;
-			bool		should_close;
+			bool						should_close;
 			ClientData();
 		};
-		std::map<int,ClientData> client_;
-		std::map<int, int> pipe_to_client_;
 };
 
 #endif
