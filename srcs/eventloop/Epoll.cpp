@@ -1,6 +1,7 @@
 #include "Epoll.hpp"
 #include "Socket.hpp"
 #include "Config.hpp"
+#include "EventLoop.hpp"
 #include <cerrno>
 #include <cstddef>
 #include <cstring>
@@ -8,7 +9,6 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <algorithm>
-#include "EventLoop.hpp"
 #include <fcntl.h>
 
 Epoll::Epoll() {

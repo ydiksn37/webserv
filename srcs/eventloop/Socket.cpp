@@ -1,3 +1,4 @@
+#include "EventLoop.hpp"
 # include <cerrno>
 # include <csignal>
 # include <cstring>
@@ -6,7 +7,6 @@
 # include <fcntl.h>
 # include <netdb.h>
 # include <sstream>
-#include "EventLoop.hpp"
 
 int CreateSocket(int port, const std::string& host) {
 	struct addrinfo hints;

@@ -11,13 +11,14 @@ class Epoll {
 		Epoll();
 		Epoll(const Config& config);
 		~Epoll();
-		void AddListener(int port, const std::string& host);
-		void Add(int fd,uint32_t events);
-		void Mod(int fd,uint32_t events);
-		void Del(int fd);
-		void Accept(int fd, int& client_fd, ListenEndpoint& endpoint);
-		const std::vector<epoll_event>& WaitEvents(int timeout = -1);
-		bool IsListen(int fd);
+
+		void 														AddListener(int port, const std::string& host);
+		void 														Add(int fd,uint32_t events);
+		void 														Mod(int fd,uint32_t events);
+		void 														Del(int fd);
+		void 														Accept(int fd, int& client_fd, ListenEndpoint& endpoint);
+		bool 														IsListen(int fd);
+		const std::vector<epoll_event>&	WaitEvents(int timeout = -1);
 
 	private:
 		int 													epfd_;

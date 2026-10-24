@@ -18,7 +18,6 @@ class CgiHandler {
 										const LocationContext& location,
 										const std::string& script_path,
 										const std::string& bin_path);
-
 		pid_t	getPid() const;
 
 	private:

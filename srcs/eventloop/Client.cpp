@@ -1,5 +1,6 @@
 #include "Client.hpp"
 #include "engine.hpp"
+#include "CgiHandler.hpp"
 #include <cstdlib>
 #include <iostream>
 #include <ostream>
@@ -10,7 +11,6 @@
 #include <cctype>
 #include <sstream>
 #include <ctime>
-#include "CgiHandler.hpp"
 
 bool endswith(std::string str, std::string suffix) {
 	if(str.size() < suffix.size())
